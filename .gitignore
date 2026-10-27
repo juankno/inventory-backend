@@ -1,0 +1,20 @@
+# dependencias
+node_modules/
+
+# compilación
+dist/
+*.tsbuildinfo
+
+# cliente generado por Prisma (se crea con npm run prisma:generate)
+src/generated/
+
+# variables de entorno
+.env
+.env*.local
+
+# registros y cobertura
+npm-debug.log*
+coverage/
+
+# sistema
+.DS_Store
