@@ -62,3 +62,4 @@ Las dependencias apuntan hacia adentro: `domain` no conoce a nadie, `application
 - Los errores se responden como `{ "code": "INSUFFICIENT_STOCK", "message": "…" }` con los códigos 400, 401, 404 o 409 (DDS Tabla 19).
 - El negocio se obtiene siempre del token, nunca del cuerpo de la petición (B-07).
 - Los GTIN de los datos semilla son de prueba (prefijo GS1 `20`). Hay que reemplazarlos por los GTIN reales de los productos de la evaluación.
+"# inventory-backend" 
