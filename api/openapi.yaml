@@ -1,0 +1,230 @@
+openapi: 3.1.0
+info:
+  title: Inventory API
+  version: 0.1.0
+  description: |
+    API REST de la app móvil de gestión de inventarios para micronegocios.
+
+    - Todas las rutas van bajo `/api/v1` y usan JSON.
+    - Los errores siempre tienen el cuerpo `{ code, message }`: `code` es estable y en inglés
+      (la app decide qué hacer con él) y `message` está en español, listo para mostrar al usuario.
+    - Las rutas protegidas exigen `Authorization: Bearer <token>`. Las únicas públicas son
+      `/auth/*` y `/health`.
+
+    Este documento solo incluye los endpoints ya implementados.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Desarrollo local
+tags:
+  - name: Health
+    description: Estado del servicio
+  - name: Auth
+    description: Registro e inicio de sesión del comerciante
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Verifica que la API está en línea
+      operationId: getHealth
+      responses:
+        "200":
+          description: La API responde.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+              example:
+                status: ok
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registra la cuenta de un negocio (RF-01)
+      description: |
+        Crea el negocio y su usuario en una sola operación y deja la sesión abierta:
+        la respuesta ya trae el token.
+
+        - El correo se guarda sin espacios y en minúsculas, y es único en todo el sistema.
+        - La contraseña se guarda solo como hash.
+        - Se registra la fecha en que se aceptó la política de datos.
+      operationId: registerAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              businessName: Tienda Doña Rosa
+              ownerName: Rosa Martínez
+              email: rosa@correo.com
+              password: secreta123
+              passwordConfirmation: secreta123
+              acceptDataPolicy: true
+      responses:
+        "201":
+          description: Cuenta creada. La sesión queda abierta con el token devuelto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJidXNpbmVzc0lkIjoiLi4uIiwic3ViIjoiLi4uIn0.firma
+                user:
+                  ownerName: Rosa Martínez
+                  email: rosa@correo.com
+                business:
+                  name: Tienda Doña Rosa
+        "400":
+          description: |
+            La petición no se puede procesar:
+
+            - `VALIDATION_ERROR`: falta un campo, sobra un campo, un valor no cumple el formato
+              o la confirmación no coincide con la contraseña. No se indica qué campo falló:
+              la app valida campo a campo antes de enviar.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+            - `DATA_POLICY_NOT_ACCEPTED`: `acceptDataPolicy` llegó en `false`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+                invalidJson:
+                  $ref: "#/components/examples/InvalidJson"
+                dataPolicyNotAccepted:
+                  summary: Política de datos no aceptada
+                  value:
+                    code: DATA_POLICY_NOT_ACCEPTED
+                    message: Debes aceptar la política de datos para continuar.
+        "409":
+          description: Ya existe una cuenta con ese correo (sin importar mayúsculas ni espacios).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: EMAIL_ALREADY_REGISTERED
+                message: Ya existe una cuenta con este correo. Inicia sesión o usa otro correo.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token que devuelven `/auth/register` y `/auth/login`. Vence según la configuración del
+        servidor (7 días por defecto). Al vencer, la app debe volver a pedir el inicio de sesión.
+
+  schemas:
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - businessName
+        - ownerName
+        - email
+        - password
+        - passwordConfirmation
+        - acceptDataPolicy
+      properties:
+        businessName:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Nombre del negocio. Se le quitan los espacios de los extremos.
+        ownerName:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Nombre del responsable. Se le quitan los espacios de los extremos.
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Se guarda sin espacios y en minúsculas.
+        password:
+          type: string
+          minLength: 8
+          format: password
+        passwordConfirmation:
+          type: string
+          format: password
+          description: Debe ser igual a `password`.
+        acceptDataPolicy:
+          type: boolean
+          description: Debe ser `true` (Ley 1581 de 2012). Si llega `false`, responde 400 `DATA_POLICY_NOT_ACCEPTED`.
+
+    AuthResponse:
+      type: object
+      required: [token, user, business]
+      properties:
+        token:
+          type: string
+          description: "JWT para enviar en `Authorization: Bearer <token>`."
+        user:
+          type: object
+          required: [ownerName, email]
+          properties:
+            ownerName:
+              type: string
+            email:
+              type: string
+              format: email
+        business:
+          type: object
+          required: [name]
+          properties:
+            name:
+              type: string
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Código estable en inglés. La app decide qué hacer según este valor.
+          enum:
+            - VALIDATION_ERROR
+            - INVALID_JSON
+            - DATA_POLICY_NOT_ACCEPTED
+            - EMAIL_ALREADY_REGISTERED
+            - NOT_FOUND
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: Mensaje en español, listo para mostrar al usuario.
+
+  examples:
+    ValidationError:
+      summary: Datos inválidos
+      value:
+        code: VALIDATION_ERROR
+        message: Los datos enviados no son válidos.
+    InvalidJson:
+      summary: JSON mal formado
+      value:
+        code: INVALID_JSON
+        message: La petición no tiene un formato válido.
+
+  responses:
+    InternalError:
+      description: Error inesperado del servidor. No se exponen detalles.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: INTERNAL_ERROR
+            message: Ocurrió un error inesperado. Intenta de nuevo.
