@@ -46,7 +46,7 @@ export class RegisterAccount {
       dataPolicyAcceptedAt: new Date(),
     });
 
-    const token = await this.tokenService.sign({
+    const token = this.tokenService.sign({
       userId: user.id,
       businessId: business.id,
     });

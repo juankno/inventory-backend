@@ -4,7 +4,7 @@ import type {
 } from "../ports/token-service.port.ts";
 
 export class TokenServiceMock implements TokenService {
-  async sign(payload: TokenPayload): Promise<string> {
+  sign(payload: TokenPayload): string {
     return `token:${payload.userId}:${payload.businessId}`;
   }
 }
