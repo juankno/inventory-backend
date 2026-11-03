@@ -10,6 +10,15 @@ export const errorCatalog = {
     message: "Los datos enviados no son válidos.",
   },
   NOT_FOUND: { status: 404, message: "El recurso solicitado no existe." },
+  DATA_POLICY_NOT_ACCEPTED: {
+    status: 400,
+    message: "Debes aceptar la política de datos para continuar.",
+  },
+  EMAIL_ALREADY_REGISTERED: {
+    status: 409,
+    message:
+      "Ya existe una cuenta con este correo. Inicia sesión o usa otro correo.",
+  },
   INTERNAL_ERROR: {
     status: 500,
     message: "Ocurrió un error inesperado. Intenta de nuevo.",
