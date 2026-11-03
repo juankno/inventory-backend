@@ -1,5 +1,10 @@
 {
   "framework": null,
   "outputDirectory": "public",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "api/openapi.yaml"
+    }
+  }
 }

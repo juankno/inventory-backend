@@ -3,6 +3,7 @@ import express, { Router } from "express";
 
 import type { RegisterAccount } from "./modules/auth/application/use-cases/register-account/register-account.use-case.ts";
 import { authRouter } from "./modules/auth/presentation/auth.router.ts";
+import { docsRouter } from "./shared/docs/docs.router.ts";
 import {
   errorHandler,
   notFoundHandler,
@@ -22,6 +23,7 @@ export function createApp(deps: AppDependencies) {
     res.json({ status: "ok" });
   });
   api.use("/auth", authRouter(deps.registerAccount));
+  api.use(docsRouter());
 
   app.use("/api/v1", api);
   app.use(notFoundHandler);

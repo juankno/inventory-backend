@@ -13,6 +13,8 @@ info:
 
     Este documento solo incluye los endpoints ya implementados.
 servers:
+  - url: https://inventory-backend-woad.vercel.app/api/v1
+    description: Producción
   - url: http://localhost:3000/api/v1
     description: Desarrollo local
 tags:
