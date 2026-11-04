@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Inventory API
+  title: Surtido API
   version: 0.1.0
   description: |
     API REST de la app móvil de gestión de inventarios para micronegocios.

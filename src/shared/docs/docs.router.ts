@@ -8,7 +8,7 @@ const openapiPath = path.join(process.cwd(), "api/openapi.yaml");
 const scalarHtml = `<!doctype html>
 <html>
   <head>
-    <title>Inventory API — Docs</title>
+    <title>Surtido API — Docs</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
