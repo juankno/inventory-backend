@@ -2,13 +2,62 @@ import { loadConfig } from "../infrastructure/config.ts";
 import { ConsoleEmailSender } from "./console-email-sender.ts";
 import { createEmailSender } from "./create-email-sender.ts";
 import { ResendEmailSender } from "./resend-email-sender.ts";
+import { SmtpEmailSender } from "./smtp-email-sender.ts";
 
 const baseEnv = {
   DATABASE_URL: "postgresql://localhost/test",
   JWT_SECRET: "una-clave-de-prueba-larga",
 };
 
+const smtpEnv = {
+  SMTP_HOST: "smtp.ejemplo.com",
+  SMTP_USER: "usuario",
+  SMTP_PASS: "clave",
+};
+
 describe("createEmailSender", () => {
+  it("should use SMTP when EMAIL_PROVIDER is smtp", () => {
+    const config = loadConfig({
+      ...baseEnv,
+      ...smtpEnv,
+      EMAIL_PROVIDER: "smtp",
+    });
+
+    expect(createEmailSender(config)).toBeInstanceOf(SmtpEmailSender);
+  });
+
+  it("should default to SMTP when SMTP_HOST is set", () => {
+    const config = loadConfig({
+      ...baseEnv,
+      ...smtpEnv,
+      RESEND_API_KEY: "re_clave",
+    });
+
+    expect(config.EMAIL_PROVIDER).toBe("smtp");
+  });
+
+  it("should use TLS only on port 465 unless SMTP_SECURE is set", () => {
+    expect(loadConfig({ ...baseEnv, ...smtpEnv }).SMTP_SECURE).toBe(false);
+    expect(
+      loadConfig({ ...baseEnv, ...smtpEnv, SMTP_PORT: "465" }).SMTP_SECURE,
+    ).toBe(true);
+    expect(
+      loadConfig({ ...baseEnv, ...smtpEnv, SMTP_SECURE: "true" }).SMTP_SECURE,
+    ).toBe(true);
+  });
+
+  it("should reject smtp without SMTP_HOST", () => {
+    expect(() => loadConfig({ ...baseEnv, EMAIL_PROVIDER: "smtp" })).toThrow(
+      "SMTP_HOST",
+    );
+  });
+
+  it("should reject SMTP_USER without SMTP_PASS", () => {
+    expect(() =>
+      loadConfig({ ...baseEnv, SMTP_HOST: "smtp.ejemplo.com", SMTP_USER: "u" }),
+    ).toThrow("SMTP_PASS");
+  });
+
   it("should use Resend when EMAIL_PROVIDER is resend", () => {
     const config = loadConfig({
       ...baseEnv,
