@@ -1,4 +1,4 @@
-import type { Email, EmailSender } from "../ports/email-sender.port.ts";
+import type { Email, EmailSender } from "../email-sender.port.ts";
 
 export class EmailSenderMock implements EmailSender {
   readonly sent: Email[] = [];

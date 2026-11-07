@@ -1,5 +1,5 @@
 import { AppError } from "../../../../../shared/errors/app-error.ts";
-import { EmailSenderMock } from "../../mocks/email-sender.mock.ts";
+import { EmailSenderMock } from "../../../../../shared/email/mocks/email-sender.mock.ts";
 import { PasswordHasherMock } from "../../mocks/password-hasher.mock.ts";
 import { PasswordResetRepositoryMock } from "../../mocks/password-reset.repository.mock.ts";
 import { ResetCodeGeneratorMock } from "../../mocks/reset-code-generator.mock.ts";

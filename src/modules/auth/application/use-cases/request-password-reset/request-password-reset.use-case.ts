@@ -1,5 +1,5 @@
 import { normalizeEmail } from "../../../domain/rules/email.ts";
-import type { EmailSender } from "../../ports/email-sender.port.ts";
+import type { EmailSender } from "../../../../../shared/email/email-sender.port.ts";
 import type { PasswordHasher } from "../../ports/password-hasher.port.ts";
 import type { PasswordResetRepository } from "../../ports/password-reset.repository.ts";
 import type { ResetCodeGenerator } from "../../ports/reset-code-generator.port.ts";

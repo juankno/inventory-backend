@@ -198,8 +198,8 @@ paths:
         - El código vence en 15 minutos, sirve una sola vez y se guarda solo como hash.
         - Pedir un código nuevo anula el anterior. Si se pidió otro hace menos de un minuto,
           no se envía nada, pero la respuesta también es 204.
-        - El correo se envía con Resend. Sin `RESEND_API_KEY`, en desarrollo se escribe en la
-          consola del servidor; en producción responde 500 `EMAIL_NOT_SENT`.
+        - El correo se envía con el proveedor de `EMAIL_PROVIDER`. Sin proveedor, en desarrollo
+          se escribe en la consola del servidor; en producción responde 500 `EMAIL_NOT_SENT`.
       operationId: requestPasswordReset
       security: []
       requestBody:

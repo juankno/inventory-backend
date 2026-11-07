@@ -22,11 +22,28 @@ La cuenta de demostración es `demo@inventario.local`, con la contraseña de `SE
 
 ### Correos (restablecer contraseña, RF-04)
 
-Los códigos para restablecer la contraseña se envían con [Resend](https://resend.com):
+El envío de correos no depende de un proveedor: los casos de uso usan la interfaz `EmailSender` ([src/shared/email/](src/shared/email/)) y `EMAIL_PROVIDER` elige la implementación.
 
-- **Desarrollo:** sin `RESEND_API_KEY`, el correo se escribe en la consola del servidor, con el código.
-- **Producción:** hay que configurar `RESEND_API_KEY` en Vercel. Sin ella, la API responde `EMAIL_NOT_SENT` y no escribe códigos en los registros.
-- **Remitente:** `EMAIL_FROM="Surtido <onboarding@resend.dev>"` solo entrega al correo de la cuenta de Resend. Para enviar a cualquier comerciante hay que verificar un dominio en Resend y usar una dirección de ese dominio.
+| `EMAIL_PROVIDER` | Qué hace | Variables |
+| --- | --- | --- |
+| `smtp` | Envía por SMTP con cualquier proveedor. **Es la opción recomendada:** cambiar de proveedor es cambiar las variables, sin tocar código. | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` |
+| `resend` | Envía con la API de [Resend](https://resend.com). | `RESEND_API_KEY`, `EMAIL_FROM` |
+| `console` | En desarrollo escribe el correo, con el código, en la consola del servidor. En producción responde `EMAIL_NOT_SENT` y no escribe códigos en los registros. | — |
+
+- **Sin `EMAIL_PROVIDER`:** se usa `smtp` si hay `SMTP_HOST`, `resend` si hay `RESEND_API_KEY` y, si no, `console`.
+- **`SMTP_SECURE`:** vacío usa TLS directo solo en el puerto 465 y STARTTLS en los demás.
+- Si falta una variable del proveedor elegido, la API no arranca y dice cuál falta.
+
+Valores SMTP de algunos proveedores:
+
+| Proveedor | `SMTP_HOST` | `SMTP_PORT` | `SMTP_USER` | `SMTP_PASS` | `EMAIL_FROM` |
+| --- | --- | --- | --- | --- | --- |
+| Gmail | `smtp.gmail.com` | `465` | tu correo de Gmail | [contraseña de aplicación](https://myaccount.google.com/apppasswords) | tu correo de Gmail |
+| Resend | `smtp.resend.com` | `465` | `resend` | la API key | una dirección de un dominio verificado (o `onboarding@resend.dev`, que solo entrega al correo de la cuenta) |
+| SendGrid | `smtp.sendgrid.net` | `587` | `apikey` | la API key | un remitente verificado |
+| Brevo | `smtp-relay.brevo.com` | `587` | el login SMTP de Brevo | la clave SMTP | un remitente verificado |
+
+**Agregar un proveedor sin SMTP:** crea un adaptador de `EmailSender` en `src/shared/email/`, súmalo a `EMAIL_PROVIDERS` en [config.ts](src/shared/infrastructure/config.ts) con sus variables y agrégalo en `createEmailSender`.
 
 ## Scripts
 

@@ -1,8 +1,8 @@
-import { AppError } from "../../../shared/errors/app-error.ts";
+import { AppError } from "../errors/app-error.ts";
 import type {
   Email,
   EmailSender,
-} from "../application/ports/email-sender.port.ts";
+} from "./email-sender.port.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
 
