@@ -1,4 +1,9 @@
-import { loginSchema, registerSchema } from "./auth.schemas.ts";
+import {
+  confirmPasswordResetSchema,
+  loginSchema,
+  registerSchema,
+  requestPasswordResetSchema,
+} from "./auth.schemas.ts";
 
 const validBody = {
   businessName: "Tienda Doña Rosa",
@@ -91,6 +96,57 @@ describe("loginSchema", () => {
     ["an unknown field like businessId", { businessId: "business-1" }],
   ])("should reject %s", (_case, override) => {
     const result = loginSchema.safeParse({ ...validLoginBody, ...override });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("requestPasswordResetSchema", () => {
+  it("should accept and trim the email", () => {
+    const result = requestPasswordResetSchema.parse({
+      email: " rosa@correo.com ",
+    });
+
+    expect(result.email).toBe("rosa@correo.com");
+  });
+
+  it("should reject an invalid email", () => {
+    const result = requestPasswordResetSchema.safeParse({ email: "rosa" });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("confirmPasswordResetSchema", () => {
+  const validReset = {
+    email: "rosa@correo.com",
+    code: "012345",
+    newPassword: "nuevaClave99",
+  };
+
+  it("should accept the body the app sends", () => {
+    const result = confirmPasswordResetSchema.safeParse(validReset);
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each(["12345", "1234567", "12a456", ""])(
+    "should reject the code %p",
+    (code) => {
+      const result = confirmPasswordResetSchema.safeParse({
+        ...validReset,
+        code,
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
+
+  it("should reject a new password shorter than 8 characters", () => {
+    const result = confirmPasswordResetSchema.safeParse({
+      ...validReset,
+      newPassword: "corta",
+    });
 
     expect(result.success).toBe(false);
   });

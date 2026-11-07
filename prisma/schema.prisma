@@ -108,6 +108,8 @@ model PasswordResetToken {
   tokenHash String    @map("token_hash")
   expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
+  // Códigos equivocados: al llegar al máximo el código deja de servir (RF-04).
+  attempts  Int       @default(0)
 
   user User @relation(fields: [userId], references: [id])
 

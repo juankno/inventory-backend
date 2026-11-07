@@ -20,6 +20,14 @@ npm run dev                   # http://localhost:3000/api/v1/health
 
 La cuenta de demostración es `demo@inventario.local`, con la contraseña de `SEED_DEMO_PASSWORD` y los 20 productos del Apéndice B de la ERS (2 agotados y 2 por agotarse). El script se puede ejecutar varias veces y siempre deja la cuenta en el mismo estado.
 
+### Correos (restablecer contraseña, RF-04)
+
+Los códigos para restablecer la contraseña se envían con [Resend](https://resend.com):
+
+- **Desarrollo:** sin `RESEND_API_KEY`, el correo se escribe en la consola del servidor, con el código.
+- **Producción:** hay que configurar `RESEND_API_KEY` en Vercel. Sin ella, la API responde `EMAIL_NOT_SENT` y no escribe códigos en los registros.
+- **Remitente:** `EMAIL_FROM="Surtido <onboarding@resend.dev>"` solo entrega al correo de la cuenta de Resend. Para enviar a cualquier comerciante hay que verificar un dominio en Resend y usar una dirección de ese dominio.
+
 ## Scripts
 
 | Script | Qué hace |

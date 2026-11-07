@@ -23,6 +23,14 @@ export const errorCatalog = {
     status: 401,
     message: "Correo o contraseña incorrectos.",
   },
+  INVALID_RESET_CODE: {
+    status: 400,
+    message: "El código no es válido o ya venció. Pide uno nuevo.",
+  },
+  EMAIL_NOT_SENT: {
+    status: 500,
+    message: "No pudimos enviar el correo. Intenta de nuevo en unos minutos.",
+  },
   UNAUTHORIZED: {
     status: 401,
     message: "Tu sesión terminó. Ingresa de nuevo.",
