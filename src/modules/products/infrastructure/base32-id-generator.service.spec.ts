@@ -1,5 +1,5 @@
-import { INTERNAL_CODE_PATTERN } from "../domain/gtin.ts";
-import { Base32IdGenerator } from "./Base32IdGenerator.ts";
+import { INTERNAL_CODE_PATTERN } from "../domain/rules/gtin.ts";
+import { Base32IdGenerator } from "./base32-id-generator.service.ts";
 
 describe("Base32IdGenerator", () => {
   it("genera identificadores con el formato INV- y 10 caracteres de Crockford", () => {

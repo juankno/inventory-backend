@@ -19,6 +19,10 @@ export const errorCatalog = {
     message:
       "Ya existe una cuenta con este correo. Inicia sesión o usa otro correo.",
   },
+  PRODUCT_CODE_ALREADY_EXISTS: {
+    status: 409,
+    message: "Ya existe un producto con este código en tu negocio.",
+  },
   INVALID_CREDENTIALS: {
     status: 401,
     message: "Correo o contraseña incorrectos.",
