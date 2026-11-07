@@ -14,4 +14,5 @@ export type Account = {
 export interface UserRepository {
   isEmailRegistered(email: string): Promise<boolean>;
   createAccount(data: AccountData): Promise<Account>;
+  findAccountByEmail(email: string): Promise<Account | null>;
 }

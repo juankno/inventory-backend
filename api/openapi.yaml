@@ -118,6 +118,70 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Inicia sesión con correo y contraseña (RF-02)
+      description: |
+        Verifica las credenciales del comerciante y devuelve un token nuevo junto con los datos
+        básicos del usuario y del negocio. La respuesta tiene la misma forma que la de
+        `/auth/register`.
+
+        - El correo se compara sin espacios y sin distinguir mayúsculas.
+        - Si el correo no existe o la contraseña no coincide, la respuesta es la misma
+          (`INVALID_CREDENTIALS`), para no revelar qué correos están registrados.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: rosa@correo.com
+              password: secreta123
+      responses:
+        "200":
+          description: Credenciales válidas. La sesión queda abierta con el token devuelto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJidXNpbmVzc0lkIjoiLi4uIiwic3ViIjoiLi4uIn0.firma
+                user:
+                  ownerName: Rosa Martínez
+                  email: rosa@correo.com
+                business:
+                  name: Tienda Doña Rosa
+        "400":
+          description: |
+            La petición no se puede procesar:
+
+            - `VALIDATION_ERROR`: falta un campo, sobra un campo, el correo no tiene formato
+              válido o la contraseña llegó vacía.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+                invalidJson:
+                  $ref: "#/components/examples/InvalidJson"
+        "401":
+          description: El correo no está registrado o la contraseña es incorrecta.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: INVALID_CREDENTIALS
+                message: Correo o contraseña incorrectos.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -167,6 +231,24 @@ components:
           type: boolean
           description: Debe ser `true` (Ley 1581 de 2012). Si llega `false`, responde 400 `DATA_POLICY_NOT_ACCEPTED`.
 
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Se compara sin espacios y sin distinguir mayúsculas.
+        password:
+          type: string
+          minLength: 1
+          format: password
+          description: No se valida la longitud mínima del registro; solo que no esté vacía.
+
     AuthResponse:
       type: object
       required: [token, user, business]
@@ -202,6 +284,7 @@ components:
             - INVALID_JSON
             - DATA_POLICY_NOT_ACCEPTED
             - EMAIL_ALREADY_REGISTERED
+            - INVALID_CREDENTIALS
             - NOT_FOUND
             - INTERNAL_ERROR
         message:

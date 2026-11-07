@@ -45,4 +45,24 @@ describe("BcryptPasswordHasher", () => {
       expect(first).not.toBe(second);
     });
   });
+
+  describe("compare", () => {
+    it("should return true when the password matches the hash", async () => {
+      const hasher = new BcryptPasswordHasher();
+      const hash = await bcrypt.hash("secreta123", 4);
+
+      const result = await hasher.compare("secreta123", hash);
+
+      expect(result).toBe(true);
+    });
+
+    it("should return false when the password does not match the hash", async () => {
+      const hasher = new BcryptPasswordHasher();
+      const hash = await bcrypt.hash("secreta123", 4);
+
+      const result = await hasher.compare("otraClave456", hash);
+
+      expect(result).toBe(false);
+    });
+  });
 });
