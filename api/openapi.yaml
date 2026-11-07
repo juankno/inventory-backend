@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Inventory API
+  title: Surtido API
   version: 0.1.0
   description: |
     API REST de la app móvil de gestión de inventarios para micronegocios.
@@ -13,6 +13,8 @@ info:
 
     Este documento solo incluye los endpoints ya implementados.
 servers:
+  - url: https://surtido-api.vercel.app/api/v1
+    description: Producción
   - url: http://localhost:3000/api/v1
     description: Desarrollo local
 tags:
