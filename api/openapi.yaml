@@ -23,7 +23,7 @@ tags:
   - name: Health
     description: Estado del servicio
   - name: Auth
-    description: Registro e inicio de sesión del comerciante
+    description: Registro, inicio de sesión y restablecimiento de la contraseña del comerciante
 
 paths:
   /health:
@@ -187,6 +187,105 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /auth/password-reset/request:
+    post:
+      tags: [Auth]
+      summary: Envía un código para restablecer la contraseña (RF-04)
+      description: |
+        Envía al correo un código de 6 dígitos para cambiar la contraseña.
+
+        - Responde 204 exista o no la cuenta, para no revelar qué correos están registrados.
+        - El código vence en 15 minutos, sirve una sola vez y se guarda solo como hash.
+        - Pedir un código nuevo anula el anterior. Si se pidió otro hace menos de un minuto,
+          no se envía nada, pero la respuesta también es 204.
+        - El correo se envía con Resend. Sin `RESEND_API_KEY`, en desarrollo se escribe en la
+          consola del servidor; en producción responde 500 `EMAIL_NOT_SENT`.
+      operationId: requestPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+            example:
+              email: rosa@correo.com
+      responses:
+        "204":
+          description: Si el correo tiene una cuenta, el código va en camino.
+        "400":
+          description: |
+            - `VALIDATION_ERROR`: falta el correo, sobra un campo o el correo no tiene formato válido.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+                invalidJson:
+                  $ref: "#/components/examples/InvalidJson"
+        "500":
+          description: |
+            - `EMAIL_NOT_SENT`: el proveedor de correo no respondió o rechazó el envío. Se puede
+              pedir otro código de inmediato.
+            - `INTERNAL_ERROR`: error inesperado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: EMAIL_NOT_SENT
+                message: No pudimos enviar el correo. Intenta de nuevo en unos minutos.
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Cambia la contraseña con el código recibido (RF-04)
+      description: |
+        Cambia la contraseña si el código es el último enviado al correo, no ha vencido y no se
+        ha usado. No abre sesión: la app lleva al inicio de sesión.
+
+        - Después de 5 intentos con un código equivocado, el código deja de servir.
+        - Cualquier falla responde `INVALID_RESET_CODE`, sin indicar si el correo existe.
+      operationId: confirmPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetConfirm"
+            example:
+              email: rosa@correo.com
+              code: "482915"
+              newPassword: nuevaClave99
+      responses:
+        "204":
+          description: La contraseña cambió.
+        "400":
+          description: |
+            - `INVALID_RESET_CODE`: el código es incorrecto, venció, ya se usó, se agotaron los
+              intentos o el correo no tiene cuenta.
+            - `VALIDATION_ERROR`: el código no tiene 6 dígitos, la contraseña nueva tiene menos
+              de 8 caracteres, falta o sobra un campo.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                invalidResetCode:
+                  summary: Código inválido
+                  value:
+                    code: INVALID_RESET_CODE
+                    message: El código no es válido o ya venció. Pide uno nuevo.
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -257,6 +356,35 @@ components:
           format: password
           description: No se valida la longitud mínima del registro; solo que no esté vacía.
 
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Se compara sin espacios y sin distinguir mayúsculas.
+
+    PasswordResetConfirm:
+      type: object
+      additionalProperties: false
+      required: [email, code, newPassword]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        code:
+          type: string
+          pattern: '^\d{6}$'
+          description: Los 6 dígitos del correo, como texto para conservar los ceros iniciales.
+        newPassword:
+          type: string
+          minLength: 8
+          format: password
+
     AuthResponse:
       type: object
       required: [token, user, business]
@@ -293,6 +421,8 @@ components:
             - DATA_POLICY_NOT_ACCEPTED
             - EMAIL_ALREADY_REGISTERED
             - INVALID_CREDENTIALS
+            - INVALID_RESET_CODE
+            - EMAIL_NOT_SENT
             - UNAUTHORIZED
             - NOT_FOUND
             - INTERNAL_ERROR
