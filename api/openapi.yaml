@@ -15,6 +15,8 @@ info:
 servers:
   - url: http://localhost:3000/api/v1
     description: Desarrollo local
+security:
+  - bearerAuth: []
 tags:
   - name: Health
     description: Estado del servicio
@@ -27,6 +29,7 @@ paths:
       tags: [Health]
       summary: Verifica que la API está en línea
       operationId: getHealth
+      security: []
       responses:
         "200":
           description: La API responde.
@@ -54,6 +57,7 @@ paths:
         - La contraseña se guarda solo como hash.
         - Se registra la fecha en que se aceptó la política de datos.
       operationId: registerAccount
+      security: []
       requestBody:
         required: true
         content:
@@ -129,6 +133,7 @@ paths:
         - Si el correo no existe o la contraseña no coincide, la respuesta es la misma
           (`INVALID_CREDENTIALS`), para no revelar qué correos están registrados.
       operationId: login
+      security: []
       requestBody:
         required: true
         content:
@@ -189,6 +194,9 @@ components:
       description: |
         Token que devuelven `/auth/register` y `/auth/login`. Vence según la configuración del
         servidor (7 días por defecto). Al vencer, la app debe volver a pedir el inicio de sesión.
+
+        Toda ruta protegida responde 401 `UNAUTHORIZED` (ver `#/components/responses/Unauthorized`)
+        si el token falta, es inválido o venció.
 
   schemas:
     RegisterRequest:
@@ -283,6 +291,7 @@ components:
             - DATA_POLICY_NOT_ACCEPTED
             - EMAIL_ALREADY_REGISTERED
             - INVALID_CREDENTIALS
+            - UNAUTHORIZED
             - NOT_FOUND
             - INTERNAL_ERROR
         message:
@@ -302,6 +311,24 @@ components:
         message: La petición no tiene un formato válido.
 
   responses:
+    Unauthorized:
+      description: |
+        La ruta es protegida y no hay una sesión válida. Se responde igual en todos los casos,
+        sin indicar cuál ocurrió:
+
+        - Falta la cabecera `Authorization`.
+        - La cabecera no usa el esquema `Bearer` o no trae token después de `Bearer `.
+        - El token está mal formado, tiene una firma inválida o venció.
+        - El token no trae el usuario o el negocio.
+
+        La app debe cerrar la sesión local y llevar al usuario al inicio de sesión.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: UNAUTHORIZED
+            message: Tu sesión terminó. Ingresa de nuevo.
     InternalError:
       description: Error inesperado del servidor. No se exponen detalles.
       content:

@@ -23,6 +23,10 @@ export const errorCatalog = {
     status: 401,
     message: "Correo o contraseña incorrectos.",
   },
+  UNAUTHORIZED: {
+    status: 401,
+    message: "Tu sesión terminó. Ingresa de nuevo.",
+  },
   INTERNAL_ERROR: {
     status: 500,
     message: "Ocurrió un error inesperado. Intenta de nuevo.",
