@@ -1,4 +1,4 @@
-import type { Email } from "../../ports/email-sender.port.ts";
+import type { Email } from "../../../../../shared/email/email-sender.port.ts";
 
 /** Correo con el código para restablecer la contraseña. */
 export const resetCodeEmail = ({

@@ -4,12 +4,11 @@ import { Login } from "./modules/auth/application/use-cases/login/login.use-case
 import { RegisterAccount } from "./modules/auth/application/use-cases/register-account/register-account.use-case.ts";
 import { RequestPasswordReset } from "./modules/auth/application/use-cases/request-password-reset/request-password-reset.use-case.ts";
 import { BcryptPasswordHasher } from "./modules/auth/infrastructure/bcrypt-password-hasher.ts";
-import { ConsoleEmailSender } from "./modules/auth/infrastructure/console-email-sender.ts";
 import { JwtTokenService } from "./modules/auth/infrastructure/jwt-token-service.ts";
 import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/prisma-password-reset.repository.ts";
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
-import { ResendEmailSender } from "./modules/auth/infrastructure/resend-email-sender.ts";
+import { createEmailSender } from "./shared/email/create-email-sender.ts";
 import type { Config } from "./shared/infrastructure/config.ts";
 import { createPrismaClient } from "./shared/infrastructure/prisma.ts";
 
@@ -27,9 +26,7 @@ export function buildDependencies(config: Config): AppDependencies {
     config.JWT_SECRET,
     config.JWT_EXPIRES_IN,
   );
-  const emailSender = config.RESEND_API_KEY
-    ? new ResendEmailSender(config.RESEND_API_KEY, config.EMAIL_FROM)
-    : new ConsoleEmailSender(config.NODE_ENV === "production");
+  const emailSender = createEmailSender(config);
 
   return {
     auth: {

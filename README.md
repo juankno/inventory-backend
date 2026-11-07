@@ -22,11 +22,16 @@ La cuenta de demostración es `demo@inventario.local`, con la contraseña de `SE
 
 ### Correos (restablecer contraseña, RF-04)
 
-Los códigos para restablecer la contraseña se envían con [Resend](https://resend.com):
+El envío de correos no depende de un proveedor: los casos de uso usan la interfaz `EmailSender` ([src/shared/email/](src/shared/email/)) y `EMAIL_PROVIDER` elige la implementación.
 
-- **Desarrollo:** sin `RESEND_API_KEY`, el correo se escribe en la consola del servidor, con el código.
-- **Producción:** hay que configurar `RESEND_API_KEY` en Vercel. Sin ella, la API responde `EMAIL_NOT_SENT` y no escribe códigos en los registros.
-- **Remitente:** `EMAIL_FROM="Surtido <onboarding@resend.dev>"` solo entrega al correo de la cuenta de Resend. Para enviar a cualquier comerciante hay que verificar un dominio en Resend y usar una dirección de ese dominio.
+| `EMAIL_PROVIDER` | Qué hace | Variables |
+| --- | --- | --- |
+| `resend` | Envía con [Resend](https://resend.com). | `RESEND_API_KEY`, `EMAIL_FROM` |
+| `console` | En desarrollo escribe el correo, con el código, en la consola del servidor. En producción responde `EMAIL_NOT_SENT` y no escribe códigos en los registros. | — |
+
+- **Sin `EMAIL_PROVIDER`:** se usa `resend` si hay `RESEND_API_KEY` y, si no, `console`.
+- **Remitente con Resend:** `EMAIL_FROM="Surtido <onboarding@resend.dev>"` solo entrega al correo de la cuenta de Resend. Para enviar a cualquier comerciante hay que verificar un dominio en Resend y usar una dirección de ese dominio.
+- **Agregar un proveedor:** crea un adaptador de `EmailSender` en `src/shared/email/`, súmalo a `EMAIL_PROVIDERS` en [config.ts](src/shared/infrastructure/config.ts) con sus variables y agrégalo en `createEmailSender`.
 
 ## Scripts
 
