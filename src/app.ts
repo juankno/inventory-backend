@@ -1,15 +1,17 @@
 import cors from "cors";
 import express, { Router } from "express";
 
-import type { RegisterAccount } from "./modules/auth/application/use-cases/register-account/register-account.use-case.ts";
-import { authRouter } from "./modules/auth/presentation/auth.router.ts";
+import {
+  authRouter,
+  type AuthUseCases,
+} from "./modules/auth/presentation/auth.router.ts";
 import {
   errorHandler,
   notFoundHandler,
 } from "./shared/errors/error-handler.middleware.ts";
 
 export type AppDependencies = {
-  registerAccount: RegisterAccount;
+  auth: AuthUseCases;
 };
 
 export function createApp(deps: AppDependencies) {
@@ -21,7 +23,7 @@ export function createApp(deps: AppDependencies) {
   api.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
-  api.use("/auth", authRouter(deps.registerAccount));
+  api.use("/auth", authRouter(deps.auth));
 
   app.use("/api/v1", api);
   app.use(notFoundHandler);

@@ -1,4 +1,4 @@
-import { registerSchema } from "./auth.schemas.ts";
+import { loginSchema, registerSchema } from "./auth.schemas.ts";
 
 const validBody = {
   businessName: "Tienda Doña Rosa",
@@ -7,6 +7,11 @@ const validBody = {
   password: "secreta123",
   passwordConfirmation: "secreta123",
   acceptDataPolicy: true,
+};
+
+const validLoginBody = {
+  email: "rosa@correo.com",
+  password: "secreta123",
 };
 
 describe("registerSchema", () => {
@@ -52,6 +57,40 @@ describe("registerSchema", () => {
     ["an unknown field like businessId", { businessId: "business-1" }],
   ])("should reject %s", (_case, override) => {
     const result = registerSchema.safeParse({ ...validBody, ...override });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("loginSchema", () => {
+  it("should accept a valid body", () => {
+    const result = loginSchema.safeParse(validLoginBody);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should trim the email", () => {
+    const body = { ...validLoginBody, email: "  rosa@correo.com " };
+
+    const result = loginSchema.parse(body);
+
+    expect(result.email).toBe("rosa@correo.com");
+  });
+
+  it("should accept a password shorter than 8 characters so the use case answers INVALID_CREDENTIALS", () => {
+    const result = loginSchema.safeParse({ ...validLoginBody, password: "1234" });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each([
+    ["an invalid email", { email: "rosa-correo.com" }],
+    ["an email longer than 254 characters", { email: `${"a".repeat(245)}@correo.com` }],
+    ["an empty password", { password: "" }],
+    ["a missing field", { password: undefined }],
+    ["an unknown field like businessId", { businessId: "business-1" }],
+  ])("should reject %s", (_case, override) => {
+    const result = loginSchema.safeParse({ ...validLoginBody, ...override });
 
     expect(result.success).toBe(false);
   });

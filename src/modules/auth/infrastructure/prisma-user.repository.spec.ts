@@ -28,6 +28,15 @@ const createdRow = {
   },
 };
 
+const foundRow = {
+  id: "user-1",
+  businessId: "business-1",
+  ownerName: "Rosa Martínez",
+  email: "rosa@correo.com",
+  passwordHash: "hashed:secreta123",
+  business: { id: "business-1", name: "Tienda Doña Rosa" },
+};
+
 function setup() {
   const findUnique = jest.fn<(args: unknown) => Promise<unknown>>();
   const create = jest.fn<(args: unknown) => Promise<unknown>>();
@@ -90,7 +99,14 @@ describe("PrismaUserRepository", () => {
           dataPolicyAcceptedAt: accountData.dataPolicyAcceptedAt,
           business: { create: { name: "Tienda Doña Rosa" } },
         },
-        include: { business: true },
+        select: {
+          id: true,
+          businessId: true,
+          ownerName: true,
+          email: true,
+          passwordHash: true,
+          business: { select: { id: true, name: true } },
+        },
       });
     });
 
@@ -130,6 +146,54 @@ describe("PrismaUserRepository", () => {
       const creation = repository.createAccount(accountData);
 
       await expect(creation).rejects.toBe(connectionError);
+    });
+  });
+
+  describe("findAccountByEmail", () => {
+    it("should query by email selecting the user fields and its business", async () => {
+      const { findUnique, repository } = setup();
+      findUnique.mockResolvedValue(null);
+
+      await repository.findAccountByEmail("rosa@correo.com");
+
+      expect(findUnique).toHaveBeenCalledWith({
+        where: { email: "rosa@correo.com" },
+        select: {
+          id: true,
+          businessId: true,
+          ownerName: true,
+          email: true,
+          passwordHash: true,
+          business: { select: { id: true, name: true } },
+        },
+      });
+    });
+
+    it("should map the found row to the user and its business", async () => {
+      const { findUnique, repository } = setup();
+      findUnique.mockResolvedValue(foundRow);
+
+      const result = await repository.findAccountByEmail("rosa@correo.com");
+
+      expect(result).toEqual({
+        user: {
+          id: "user-1",
+          businessId: "business-1",
+          ownerName: "Rosa Martínez",
+          email: "rosa@correo.com",
+          passwordHash: "hashed:secreta123",
+        },
+        business: { id: "business-1", name: "Tienda Doña Rosa" },
+      });
+    });
+
+    it("should return null when no user has that email", async () => {
+      const { findUnique, repository } = setup();
+      findUnique.mockResolvedValue(null);
+
+      const result = await repository.findAccountByEmail("rosa@correo.com");
+
+      expect(result).toBeNull();
     });
   });
 });

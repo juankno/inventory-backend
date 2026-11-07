@@ -19,6 +19,10 @@ export const errorCatalog = {
     message:
       "Ya existe una cuenta con este correo. Inicia sesión o usa otro correo.",
   },
+  INVALID_CREDENTIALS: {
+    status: 401,
+    message: "Correo o contraseña incorrectos.",
+  },
   INTERNAL_ERROR: {
     status: 500,
     message: "Ocurrió un error inesperado. Intenta de nuevo.",

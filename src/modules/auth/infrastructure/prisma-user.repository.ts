@@ -6,6 +6,30 @@ import type {
   UserRepository,
 } from "../application/ports/user.repository.ts";
 
+const accountSelect = {
+  id: true,
+  businessId: true,
+  ownerName: true,
+  email: true,
+  passwordHash: true,
+  business: { select: { id: true, name: true } },
+} satisfies Prisma.UserSelect;
+
+type AccountRow = Prisma.UserGetPayload<{ select: typeof accountSelect }>;
+
+const toAccount = (row: AccountRow): Account => {
+  return {
+    user: {
+      id: row.id,
+      businessId: row.businessId,
+      ownerName: row.ownerName,
+      email: row.email,
+      passwordHash: row.passwordHash,
+    },
+    business: { id: row.business.id, name: row.business.name },
+  };
+};
+
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -19,7 +43,7 @@ export class PrismaUserRepository implements UserRepository {
 
   async createAccount(data: AccountData): Promise<Account> {
     try {
-      const { business, ...user } = await this.prisma.user.create({
+      const row = await this.prisma.user.create({
         data: {
           ownerName: data.ownerName,
           email: data.email,
@@ -27,19 +51,9 @@ export class PrismaUserRepository implements UserRepository {
           dataPolicyAcceptedAt: data.dataPolicyAcceptedAt,
           business: { create: { name: data.businessName } },
         },
-        include: { business: true },
+        select: accountSelect,
       });
-
-      return {
-        user: {
-          id: user.id,
-          businessId: user.businessId,
-          ownerName: user.ownerName,
-          email: user.email,
-          passwordHash: user.passwordHash,
-        },
-        business: { id: business.id, name: business.name },
-      };
+      return toAccount(row);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -49,5 +63,13 @@ export class PrismaUserRepository implements UserRepository {
       }
       throw error;
     }
+  }
+
+  async findAccountByEmail(email: string): Promise<Account | null> {
+    const row = await this.prisma.user.findUnique({
+      where: { email },
+      select: accountSelect,
+    });
+    return row ? toAccount(row) : null;
   }
 }

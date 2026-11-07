@@ -36,4 +36,12 @@ export class UserRepositoryMock implements UserRepository {
     });
     return { user, business };
   }
+
+  async findAccountByEmail(email: string): Promise<Account | null> {
+    const account = this.accounts.find(
+      (account) => account.user.email === email,
+    );
+    if (!account) return null;
+    return { user: account.user, business: account.business };
+  }
 }
