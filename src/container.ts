@@ -12,10 +12,6 @@ import { createEmailSender } from "./shared/email/create-email-sender.ts";
 import type { Config } from "./shared/infrastructure/config.ts";
 import { createPrismaClient } from "./shared/infrastructure/prisma.ts";
 
-/**
- * Arma las dependencias de la app. Lo usan src/main.ts (servidor local) y
- * api/index.ts (Vercel), así los dos entran con los mismos casos de uso.
- */
 export function buildDependencies(config: Config): AppDependencies {
   const prisma = createPrismaClient(config.DATABASE_URL);
 
