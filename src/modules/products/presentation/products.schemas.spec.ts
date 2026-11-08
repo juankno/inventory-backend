@@ -1,4 +1,9 @@
-import { codeParamsSchema, createProductSchema } from "./products.schemas.ts";
+import {
+  codeParamsSchema,
+  createProductSchema,
+  productIdParamsSchema,
+  updateProductSchema,
+} from "./products.schemas.ts";
 
 const validBody = {
   name: "Arroz Diana 500 g",
@@ -94,6 +99,56 @@ describe("codeParamsSchema", () => {
 
   it("should reject the code sent as a plain string instead of the params object", () => {
     const result = codeParamsSchema.safeParse("7702004003508");
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("productIdParamsSchema", () => {
+  it("should accept a UUID", () => {
+    const result = productIdParamsSchema.safeParse({ id: "3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192" });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should reject an id that is not a UUID", () => {
+    const result = productIdParamsSchema.safeParse({ id: "product-1" });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updateProductSchema", () => {
+  it.each([
+    ["only the name", { name: "Arroz Roa 1 kg" }],
+    ["only the unit", { unit: "KILOGRAM" }],
+    ["a null sale price to clear it", { salePrice: null }],
+    ["a null minimum stock to clear it", { minStock: null }],
+    ["every editable field", { name: "Arroz", unit: "UNIT", salePrice: 3500, minStock: 6 }],
+  ])("should accept %s", (_case, body) => {
+    const result = updateProductSchema.safeParse(body);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should trim the name", () => {
+    const result = updateProductSchema.parse({ name: "  Arroz  " });
+
+    expect(result.name).toBe("Arroz");
+  });
+
+  it.each([
+    ["an empty body", {}],
+    ["a stock change", { stock: 100 }],
+    ["a code change", { code: "7702004003508" }],
+    ["a codeType change", { codeType: "GTIN" }],
+    ["a businessId", { businessId: "business-2" }],
+    ["a name shorter than 2 characters", { name: "A" }],
+    ["a null name", { name: null }],
+    ["an unknown unit", { unit: "BOX" }],
+    ["a negative sale price", { salePrice: -1 }],
+  ])("should reject %s", (_case, body) => {
+    const result = updateProductSchema.safeParse(body);
 
     expect(result.success).toBe(false);
   });

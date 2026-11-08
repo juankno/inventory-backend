@@ -56,6 +56,11 @@ export const errorCatalog = {
     status: 404,
     message: "Este producto no está en tu inventario.",
   },
+  INVALID_UNIT_CHANGE: {
+    status: 409,
+    message:
+      "No puedes cambiar a unidades: la existencia tiene decimales. Haz primero un ajuste.",
+  },
   INSUFFICIENT_STOCK: {
     status: 409,
     message:

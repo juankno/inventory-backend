@@ -17,7 +17,9 @@ import { PrismaInventoryQueries } from "./modules/inventory/infrastructure/prism
 import { RegisterMovement } from "./modules/movements/application/use-cases/register-movement/register-movement.use-case.ts";
 import { PrismaMovementRepository } from "./modules/movements/infrastructure/prisma-movement.repository.ts";
 import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
+import { DeactivateProduct } from "./modules/products/application/use-cases/deactivate-product/deactivate-product.use-case.ts";
 import { IdentifyProduct } from "./modules/products/application/use-cases/identify-product/identify-product.use-case.ts";
+import { UpdateProduct } from "./modules/products/application/use-cases/update-product/update-product.use-case.ts";
 import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
 import { PrismaProductRepository } from "./modules/products/infrastructure/prisma-product.repository.ts";
 import { createEmailSender } from "./shared/email/create-email-sender.ts";
@@ -66,6 +68,8 @@ export function buildDependencies(config: Config): AppDependencies {
         new Base32IdGenerator(),
       ),
       identifyProduct: new IdentifyProduct(productRepository),
+      updateProduct: new UpdateProduct(productRepository),
+      deactivateProduct: new DeactivateProduct(productRepository),
     },
     movements: {
       registerMovement: new RegisterMovement(

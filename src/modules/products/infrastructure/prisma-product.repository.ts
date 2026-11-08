@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts";
 import { AppError } from "../../../shared/errors/app-error.ts";
 import type {
+  ProductChanges,
   ProductData,
   ProductRepository,
 } from "../application/ports/product.repository.ts";
@@ -99,4 +100,47 @@ export class PrismaProductRepository implements ProductRepository {
     });
     return row ? toProduct(row) : null;
   }
+
+  async findActiveById(
+    businessId: string,
+    productId: string,
+  ): Promise<Product | null> {
+    const row = await this.prisma.product.findFirst({
+      where: { id: productId, businessId, isActive: true },
+      select: productSelect,
+    });
+    return row ? toProduct(row) : null;
+  }
+
+  async update(
+    businessId: string,
+    productId: string,
+    changes: ProductChanges,
+  ): Promise<Product | null> {
+    try {
+      const row = await this.prisma.product.update({
+        where: { id: productId, businessId, isActive: true },
+        data: changes,
+        select: productSelect,
+      });
+      return toProduct(row);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async deactivate(businessId: string, productId: string): Promise<boolean> {
+    const { count } = await this.prisma.product.updateMany({
+      where: { id: productId, businessId, isActive: true },
+      data: { isActive: false },
+    });
+    return count === 1;
+  }
 }
+
