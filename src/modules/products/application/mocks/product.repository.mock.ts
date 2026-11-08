@@ -16,6 +16,7 @@ export type InitialMovement = {
 export class ProductRepositoryMock implements ProductRepository {
   readonly products: Product[] = [];
   readonly initialMovements: InitialMovement[] = [];
+  findCalls = 0;
 
   async create({ createdBy, ...data }: ProductData): Promise<Product> {
     const isCodeTaken = this.products.some(
@@ -46,5 +47,19 @@ export class ProductRepositoryMock implements ProductRepository {
       });
     }
     return product;
+  }
+
+  async findActiveByCode(
+    businessId: string,
+    code: string,
+  ): Promise<Product | null> {
+    this.findCalls += 1;
+    const product = this.products.find(
+      (product) =>
+        product.businessId === businessId &&
+        product.code === code &&
+        product.isActive,
+    );
+    return product ?? null;
   }
 }

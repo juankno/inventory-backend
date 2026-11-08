@@ -9,4 +9,5 @@ export interface ProductData extends Omit<
 
 export interface ProductRepository {
   create(productData: ProductData): Promise<Product>;
+  findActiveByCode(businessId: string, code: string): Promise<Product | null>;
 }

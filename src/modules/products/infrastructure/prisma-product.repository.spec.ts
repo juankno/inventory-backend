@@ -38,8 +38,13 @@ type CreateArgs = { data: Record<string, unknown> };
 
 function setup() {
   const create = jest.fn<(args: CreateArgs) => Promise<unknown>>();
-  const prisma = { product: { create } } as unknown as PrismaClient;
-  return { create, repository: new PrismaProductRepository(prisma) };
+  const findUnique = jest.fn<(args: unknown) => Promise<unknown>>();
+  const prisma = { product: { create, findUnique } } as unknown as PrismaClient;
+  return {
+    create,
+    findUnique,
+    repository: new PrismaProductRepository(prisma),
+  };
 }
 
 function uniqueViolation() {
@@ -121,7 +126,11 @@ describe("PrismaProductRepository", () => {
 
     it("should map missing salePrice and minStock to null", async () => {
       const { create, repository } = setup();
-      create.mockResolvedValue({ ...createdRow, salePrice: null, minStock: null });
+      create.mockResolvedValue({
+        ...createdRow,
+        salePrice: null,
+        minStock: null,
+      });
 
       const product = await repository.create({
         ...productData,
@@ -140,7 +149,9 @@ describe("PrismaProductRepository", () => {
       const creation = repository.create(productData);
 
       await expect(creation).rejects.toBeInstanceOf(AppError);
-      await expect(creation).rejects.toMatchObject({ code: "CODE_ALREADY_REGISTERED" });
+      await expect(creation).rejects.toMatchObject({
+        code: "CODE_ALREADY_REGISTERED",
+      });
     });
 
     it("should rethrow any other error unchanged", async () => {
@@ -151,6 +162,64 @@ describe("PrismaProductRepository", () => {
       const creation = repository.create(productData);
 
       await expect(creation).rejects.toBe(connectionError);
+    });
+  });
+
+  describe("findActiveByCode", () => {
+    it("should search only active products by the business and code unique key", async () => {
+      const { findUnique, repository } = setup();
+      findUnique.mockResolvedValue(createdRow);
+
+      await repository.findActiveByCode("business-1", "7702004003508");
+
+      expect(findUnique).toHaveBeenCalledWith({
+        where: {
+          businessId_code: { businessId: "business-1", code: "7702004003508" },
+          isActive: true,
+        },
+        select: expect.objectContaining({ id: true, stock: true }),
+      });
+    });
+
+    it("should return the product with its decimals mapped to numbers when an active product matches", async () => {
+      const { findUnique, repository } = setup();
+      findUnique.mockResolvedValue({
+        ...createdRow,
+        stock: new Prisma.Decimal("12.50"),
+        salePrice: null,
+      });
+
+      const product = await repository.findActiveByCode(
+        "business-1",
+        "7702004003508",
+      );
+
+      expect(product).toEqual({
+        id: "product-1",
+        businessId: "business-1",
+        name: "Arroz Diana 500 g",
+        unit: "UNIT",
+        salePrice: null,
+        stock: 12.5,
+        minStock: 6,
+        codeType: "GTIN",
+        code: "7702004003508",
+        isActive: true,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    });
+
+    it("should return null when no active product matches the code in the business", async () => {
+      const { findUnique, repository } = setup();
+      findUnique.mockResolvedValue(null);
+
+      const product = await repository.findActiveByCode(
+        "business-2",
+        "7702004003508",
+      );
+
+      expect(product).toBeNull();
     });
   });
 });

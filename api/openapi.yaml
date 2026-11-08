@@ -391,6 +391,86 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /products/code/{code}:
+    get:
+      tags: [Products]
+      summary: Identifica un producto por el código escaneado con la cámara (RF-09)
+      description: |
+        Busca el producto **activo** del negocio del token cuyo código coincide exactamente con
+        el escaneado. Sirve tanto para códigos de barras como para los QR que genera la app.
+
+        - **Código de barras (GTIN):** 8, 12 o 13 dígitos con dígito de control válido. La app
+          debe enviarlo normalizado igual que al registrarlo (UPC-A → 13 dígitos con un 0
+          delante); si no, no coincidirá con el código guardado.
+        - **QR interno:** `INV-` + 10 caracteres en base32 Crockford (mayúsculas).
+        - Cualquier otro contenido de hasta 32 caracteres (texto, una URL corta, etc.) responde
+          404 sin consultar el inventario. Si pasa de 32 caracteres, responde 400.
+
+        Los productos dados de baja o de otro negocio responden igual que uno inexistente.
+      operationId: identifyProduct
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Contenido leído por la cámara.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 32
+          examples:
+            gtin:
+              summary: Código de barras
+              value: "7702004003508"
+            internal:
+              summary: QR interno
+              value: INV-7KQ2M9XA4T
+      responses:
+        "200":
+          description: Producto encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+              example:
+                id: 8b2e4d1a-6c3f-4a9e-b1d7-5f0e2c3a4b6d
+                name: Arroz Diana 500 g
+                unit: UNIT
+                stock: 24
+                salePrice: 3500
+                minStock: 6
+                codeType: GTIN
+                code: "7702004003508"
+        "400":
+          description: |
+            `VALIDATION_ERROR`: el código está vacío o tiene más de 32 caracteres. Los espacios
+            al inicio y al final se ignoran.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: |
+            `CODE_NOT_RECOGNIZED`: el código no corresponde a un producto activo del negocio.
+            Ocurre si el código no tiene un formato reconocido, si no está registrado, si el
+            producto fue dado de baja o si pertenece a otro negocio.
+
+            La app decide qué hacer según lo que escaneó: si era un código de barras válido,
+            ofrece registrar el producto con ese código; si no, muestra el `message`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CODE_NOT_RECOGNIZED
+                message: Este código no corresponde a un producto de tu inventario.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -590,6 +670,7 @@ components:
             - INVALID_GTIN
             - INVALID_QUANTITY
             - CODE_ALREADY_REGISTERED
+            - CODE_NOT_RECOGNIZED
             - INTERNAL_ERROR
         message:
           type: string

@@ -10,6 +10,7 @@ import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
 import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
 import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
+import { IdentifyProduct } from "./modules/products/application/use-cases/identify-product/identify-product.use-case.ts";
 import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
 import { PrismaProductRepository } from "./modules/products/infrastructure/prisma-product.repository.ts";
 import { createEmailSender } from "./shared/email/create-email-sender.ts";
@@ -27,6 +28,7 @@ export function buildDependencies(config: Config): AppDependencies {
     config.JWT_EXPIRES_IN,
   );
   const emailSender = createEmailSender(config);
+  const productRepository = new PrismaProductRepository(prisma);
 
   return {
     requireAuth: requireAuthMiddleware(tokenService),
@@ -52,9 +54,10 @@ export function buildDependencies(config: Config): AppDependencies {
     },
     products: {
       createProduct: new CreateProduct(
-        new PrismaProductRepository(prisma),
+        productRepository,
         new Base32IdGenerator(),
       ),
+      identifyProduct: new IdentifyProduct(productRepository),
     },
   };
 }
