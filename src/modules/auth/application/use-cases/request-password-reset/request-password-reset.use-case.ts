@@ -7,17 +7,12 @@ import type { UserRepository } from "../../ports/user.repository.ts";
 import { resetCodeEmail } from "./reset-code-email.ts";
 
 export const RESET_CODE_TTL_MINUTES = 15;
-/** Evita reenviar un código si se pidió otro hace menos de un minuto. */
 export const RESET_CODE_COOLDOWN_MS = 60_000;
 
 export type RequestPasswordResetInput = {
   email: string;
 };
 
-/**
- * Envía un código de 6 dígitos al correo del comerciante (RF-04). Responde
- * igual exista o no la cuenta, para no revelar qué correos están registrados.
- */
 export class RequestPasswordReset {
   constructor(
     private readonly userRepository: UserRepository,

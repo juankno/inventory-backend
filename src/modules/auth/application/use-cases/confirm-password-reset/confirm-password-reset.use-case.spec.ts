@@ -86,6 +86,35 @@ describe("ConfirmPasswordReset", () => {
       expect(resetRepository.passwordHashes.size).toBe(0);
     });
 
+    it("should not compare more codes than the attempt limit when they arrive at the same time", async () => {
+      const { confirmPasswordReset, resetRepository } = await setup();
+      const wrongCodes = Array.from({ length: 20 }, (_, index) =>
+        String(index).padStart(6, "0"),
+      );
+
+      const results = await Promise.allSettled(
+        wrongCodes.map((code) => confirmPasswordReset.execute({ ...validInput, code })),
+      );
+
+      expect(results.every((result) => result.status === "rejected")).toBe(true);
+      expect(resetRepository.tokens[0]?.attempts).toBe(MAX_RESET_ATTEMPTS);
+    });
+
+    it("should change the password only once when the right code arrives twice at the same time", async () => {
+      const { confirmPasswordReset, resetRepository, account } = await setup();
+
+      const results = await Promise.allSettled([
+        confirmPasswordReset.execute(validInput),
+        confirmPasswordReset.execute({ ...validInput, newPassword: "otraClave99" }),
+      ]);
+
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+      expect(resetRepository.passwordHashes.get(account.user.id)).toBe(
+        "hashed:nuevaClave99",
+      );
+    });
+
     it("should reject an expired code", async () => {
       const { confirmPasswordReset, resetRepository } = await setup();
       resetRepository.tokens[0]!.expiresAt = new Date(Date.now() - MINUTE);

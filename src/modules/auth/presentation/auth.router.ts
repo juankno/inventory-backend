@@ -47,7 +47,6 @@ export const authRouter = ({
     res.status(200).json(result);
   });
 
-  // RF-04: responde 204 exista o no la cuenta, para no revelar qué correos hay.
   router.post("/password-reset/request", async (req, res) => {
     const body = validate(requestPasswordResetSchema, req.body);
     await requestPasswordReset.execute({ email: body.email });

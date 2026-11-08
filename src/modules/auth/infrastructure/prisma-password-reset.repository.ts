@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../../../generated/prisma/client.ts";
 import type {
+  NewPasswordResetToken,
   PasswordResetRepository,
   PasswordResetToken,
 } from "../application/ports/password-reset.repository.ts";
@@ -24,11 +25,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
     });
   }
 
-  async replaceActive(data: {
-    userId: string;
-    tokenHash: string;
-    expiresAt: Date;
-  }): Promise<string> {
+  async replaceActive(data: NewPasswordResetToken): Promise<string> {
     const [, token] = await this.prisma.$transaction([
       this.prisma.passwordResetToken.updateMany({
         where: { userId: data.userId, usedAt: null },
@@ -49,29 +46,32 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
     });
   }
 
-  async registerFailedAttempt(tokenId: string): Promise<number> {
-    const token = await this.prisma.passwordResetToken.update({
-      where: { id: tokenId },
+  async reserveAttempt(tokenId: string, maxAttempts: number): Promise<boolean> {
+    const { count } = await this.prisma.passwordResetToken.updateMany({
+      where: { id: tokenId, usedAt: null, attempts: { lt: maxAttempts } },
       data: { attempts: { increment: 1 } },
-      select: { attempts: true },
     });
-    return token.attempts;
+    return count === 1;
   }
 
   async consume(
     tokenId: string,
     userId: string,
     passwordHash: string,
-  ): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.passwordResetToken.update({
-        where: { id: tokenId },
-        data: { usedAt: new Date() },
-      }),
-      this.prisma.user.update({
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const { count } = await tx.passwordResetToken.updateMany({
+        where: { id: tokenId, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (count === 0) return false;
+
+      await tx.user.update({
         where: { id: userId },
         data: { passwordHash },
-      }),
-    ]);
+      });
+      return true;
+    });
   }
 }
