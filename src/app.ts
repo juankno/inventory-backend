@@ -6,6 +6,10 @@ import {
   type AuthUseCases,
 } from "./modules/auth/presentation/auth.router.ts";
 import {
+  movementsRouter,
+  type MovementsUseCases,
+} from "./modules/movements/presentation/movements.router.ts";
+import {
   productsRouter,
   type ProductsUseCases,
 } from "./modules/products/presentation/products.router.ts";
@@ -19,6 +23,7 @@ export type AppDependencies = {
   requireAuth: RequestHandler;
   auth: AuthUseCases;
   products: ProductsUseCases;
+  movements: MovementsUseCases;
 };
 
 export function createApp(deps: AppDependencies) {
@@ -32,6 +37,7 @@ export function createApp(deps: AppDependencies) {
   });
   api.use("/auth", authRouter(deps.auth));
   api.use("/products", deps.requireAuth, productsRouter(deps.products));
+  api.use("/movements", deps.requireAuth, movementsRouter(deps.movements));
   api.use(docsRouter());
 
   app.use("/api/v1", api);

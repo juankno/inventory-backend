@@ -1,10 +1,11 @@
 import { AppError } from "../../../../../shared/errors/app-error.ts";
-import type { Product, Unit } from "../../../domain/models/product.model.ts";
+import type { Product } from "../../../domain/models/product.model.ts";
 import { isRegistrableGtin } from "../../../domain/rules/gtin.ts";
 import {
   hasAtMostTwoDecimals,
   isValidStockForUnit,
-} from "../../../domain/rules/quantity.ts";
+  type Unit,
+} from "../../../../../shared/domain/quantity.ts";
 import type { IdGenerator } from "../../ports/id-generator.port.ts";
 import type {
   ProductData,

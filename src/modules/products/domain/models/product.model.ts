@@ -1,4 +1,4 @@
-export type Unit = "UNIT" | "KILOGRAM" | "GRAM" | "POUND" | "LITER";
+import type { Unit } from "../../../../shared/domain/quantity.ts";
 
 export type CodeType = "GTIN" | "INTERNAL";
 

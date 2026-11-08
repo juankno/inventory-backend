@@ -9,6 +9,8 @@ import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/pri
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
 import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
+import { RegisterMovement } from "./modules/movements/application/use-cases/register-movement/register-movement.use-case.ts";
+import { PrismaMovementRepository } from "./modules/movements/infrastructure/prisma-movement.repository.ts";
 import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
 import { IdentifyProduct } from "./modules/products/application/use-cases/identify-product/identify-product.use-case.ts";
 import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
@@ -58,6 +60,11 @@ export function buildDependencies(config: Config): AppDependencies {
         new Base32IdGenerator(),
       ),
       identifyProduct: new IdentifyProduct(productRepository),
+    },
+    movements: {
+      registerMovement: new RegisterMovement(
+        new PrismaMovementRepository(prisma),
+      ),
     },
   };
 }

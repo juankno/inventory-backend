@@ -52,6 +52,19 @@ export const errorCatalog = {
     status: 500,
     message: "Ocurrió un error inesperado. Intenta de nuevo.",
   },
+  PRODUCT_NOT_FOUND: {
+    status: 404,
+    message: "Este producto no está en tu inventario.",
+  },
+  INSUFFICIENT_STOCK: {
+    status: 409,
+    message:
+      "No hay existencias suficientes para esta salida. Revisa la cantidad o haz un ajuste.",
+  },
+  IDEMPOTENCY_KEY_CONFLICT: {
+    status: 409,
+    message: "No pudimos registrar el movimiento. Intenta de nuevo.",
+  },
   CODE_NOT_RECOGNIZED: {
     status: 404,
     message: "Este código no corresponde a un producto de tu inventario.",

@@ -1,4 +1,4 @@
-import type { Unit } from "../models/product.model.ts";
+export type Unit = "UNIT" | "KILOGRAM" | "GRAM" | "POUND" | "LITER";
 
 export const hasAtMostTwoDecimals = (value: number): boolean => {
   return Math.round(value * 100) / 100 === value;
