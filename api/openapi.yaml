@@ -748,6 +748,93 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+    patch:
+      tags: [Products]
+      summary: Edita un producto (RF-07)
+      description: |
+        Cambia solo los campos que se envían. Se pueden editar `name`, `unit`, `salePrice` y
+        `minStock`; `salePrice` y `minStock` aceptan `null` para quitarlos.
+
+        La existencia (`stock`) **no se edita aquí**: solo cambia con un movimiento. El código y
+        su tipo tampoco se pueden cambiar. Si llegan en el cuerpo, la respuesta es 400.
+      operationId: updateProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRequest"
+            example:
+              name: Arroz Diana 1 kg
+              salePrice: 6800
+      responses:
+        "200":
+          description: Producto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: |
+            - `VALIDATION_ERROR`: el cuerpo está vacío, trae un campo no editable (`stock`,
+              `code`, `codeType`) o un valor con formato inválido, o el id no es un UUID.
+            - `INVALID_QUANTITY`: `salePrice` o `minStock` tienen más de 2 decimales.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProductNotFound"
+        "409":
+          description: |
+            `INVALID_UNIT_CHANGE`: se pidió cambiar a `UNIT` y la existencia tiene decimales.
+            No cambia nada; la app puede sugerir primero un ajuste a un número entero.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: INVALID_UNIT_CHANGE
+                message: "No puedes cambiar a unidades: la existencia tiene decimales. Haz primero un ajuste."
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Products]
+      summary: Da de baja un producto (RF-08)
+      description: |
+        Baja lógica: el producto deja de aparecer en el inventario, la búsqueda, la
+        identificación por código y las alertas, pero **conserva su historial**. No hay borrado
+        físico. Dar de baja un producto que ya estaba dado de baja responde 404.
+      operationId: deactivateProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "204":
+          description: Producto dado de baja. Sin cuerpo.
+        "400":
+          description: "`VALIDATION_ERROR`: el id no es un UUID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProductNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /products/{id}/movements:
     get:
       tags: [Products]
@@ -1105,6 +1192,26 @@ components:
           type: [string, "null"]
           format: uuid
 
+    UpdateProductRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+        unit:
+          $ref: "#/components/schemas/Unit"
+        salePrice:
+          type: [number, "null"]
+          minimum: 0
+          description: Máximo 2 decimales. `null` quita el precio.
+        minStock:
+          type: [number, "null"]
+          minimum: 0
+          description: Máximo 2 decimales. `null` quita la existencia mínima (deja de generar alertas por agotarse).
+
     Error:
       type: object
       required: [code, message]
@@ -1127,6 +1234,7 @@ components:
             - CODE_ALREADY_REGISTERED
             - CODE_NOT_RECOGNIZED
             - PRODUCT_NOT_FOUND
+            - INVALID_UNIT_CHANGE
             - INSUFFICIENT_STOCK
             - IDEMPOTENCY_KEY_CONFLICT
             - INTERNAL_ERROR

@@ -7,7 +7,18 @@ export interface ProductData extends Omit<
   createdBy: string;
 }
 
+export type ProductChanges = Partial<
+  Pick<Product, "name" | "unit" | "salePrice" | "minStock">
+>;
+
 export interface ProductRepository {
   create(productData: ProductData): Promise<Product>;
   findActiveByCode(businessId: string, code: string): Promise<Product | null>;
+  findActiveById(businessId: string, productId: string): Promise<Product | null>;
+  update(
+    businessId: string,
+    productId: string,
+    changes: ProductChanges,
+  ): Promise<Product | null>;
+  deactivate(businessId: string, productId: string): Promise<boolean>;
 }

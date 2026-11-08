@@ -1,6 +1,7 @@
 import { AppError } from "../../../../shared/errors/app-error.ts";
 import type { Product } from "../../domain/models/product.model.ts";
 import type {
+  ProductChanges,
   ProductData,
   ProductRepository,
 } from "../ports/product.repository.ts";
@@ -62,4 +63,39 @@ export class ProductRepositoryMock implements ProductRepository {
     );
     return product ?? null;
   }
+
+  async findActiveById(
+    businessId: string,
+    productId: string,
+  ): Promise<Product | null> {
+    return (
+      this.products.find(
+        (product) =>
+          product.id === productId &&
+          product.businessId === businessId &&
+          product.isActive,
+      ) ?? null
+    );
+  }
+
+  async update(
+    businessId: string,
+    productId: string,
+    changes: ProductChanges,
+  ): Promise<Product | null> {
+    const product = await this.findActiveById(businessId, productId);
+    if (!product) return null;
+
+    Object.assign(product, changes, { updatedAt: new Date() });
+    return product;
+  }
+
+  async deactivate(businessId: string, productId: string): Promise<boolean> {
+    const product = await this.findActiveById(businessId, productId);
+    if (!product) return false;
+
+    product.isActive = false;
+    return true;
+  }
 }
+

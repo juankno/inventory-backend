@@ -39,10 +39,18 @@ type CreateArgs = { data: Record<string, unknown> };
 function setup() {
   const create = jest.fn<(args: CreateArgs) => Promise<unknown>>();
   const findUnique = jest.fn<(args: unknown) => Promise<unknown>>();
-  const prisma = { product: { create, findUnique } } as unknown as PrismaClient;
+  const findFirst = jest.fn<(args: unknown) => Promise<unknown>>();
+  const update = jest.fn<(args: unknown) => Promise<unknown>>();
+  const updateMany = jest.fn<(args: unknown) => Promise<unknown>>();
+  const prisma = {
+    product: { create, findUnique, findFirst, update, updateMany },
+  } as unknown as PrismaClient;
   return {
     create,
     findUnique,
+    findFirst,
+    update,
+    updateMany,
     repository: new PrismaProductRepository(prisma),
   };
 }
@@ -220,6 +228,88 @@ describe("PrismaProductRepository", () => {
       );
 
       expect(product).toBeNull();
+    });
+  });
+
+  describe("findActiveById", () => {
+    it("should look for an active product of the business only", async () => {
+      const { findFirst, repository } = setup();
+      findFirst.mockResolvedValue(null);
+
+      const product = await repository.findActiveById("business-1", "product-1");
+
+      expect(product).toBeNull();
+      expect(findFirst).toHaveBeenCalledWith({
+        where: { id: "product-1", businessId: "business-1", isActive: true },
+        select: expect.objectContaining({ id: true, stock: true }),
+      });
+    });
+  });
+
+  describe("update", () => {
+    it("should update only an active product of the business with the sent changes", async () => {
+      const { update, repository } = setup();
+      update.mockResolvedValue({ ...createdRow, name: "Arroz Roa 1 kg" });
+
+      const product = await repository.update("business-1", "product-1", {
+        name: "Arroz Roa 1 kg",
+        salePrice: null,
+      });
+
+      expect(product?.name).toBe("Arroz Roa 1 kg");
+      expect(update).toHaveBeenCalledWith({
+        where: { id: "product-1", businessId: "business-1", isActive: true },
+        data: { name: "Arroz Roa 1 kg", salePrice: null },
+        select: expect.objectContaining({ id: true, stock: true }),
+      });
+    });
+
+    it("should return null when no active product of the business matches", async () => {
+      const { update, repository } = setup();
+      update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError("Record not found", {
+          code: "P2025",
+          clientVersion: Prisma.prismaVersion.client,
+        }),
+      );
+
+      const product = await repository.update("business-2", "product-1", { name: "Otro" });
+
+      expect(product).toBeNull();
+    });
+
+    it("should rethrow any other error unchanged", async () => {
+      const { update, repository } = setup();
+      const connectionError = new Error("connection refused");
+      update.mockRejectedValue(connectionError);
+
+      const updating = repository.update("business-1", "product-1", { name: "Otro" });
+
+      await expect(updating).rejects.toBe(connectionError);
+    });
+  });
+
+  describe("deactivate", () => {
+    it("should mark as inactive only an active product of the business", async () => {
+      const { updateMany, repository } = setup();
+      updateMany.mockResolvedValue({ count: 1 });
+
+      const isDeactivated = await repository.deactivate("business-1", "product-1");
+
+      expect(isDeactivated).toBe(true);
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: "product-1", businessId: "business-1", isActive: true },
+        data: { isActive: false },
+      });
+    });
+
+    it("should return false when the product is missing, inactive or from another business", async () => {
+      const { updateMany, repository } = setup();
+      updateMany.mockResolvedValue({ count: 0 });
+
+      const isDeactivated = await repository.deactivate("business-2", "product-1");
+
+      expect(isDeactivated).toBe(false);
     });
   });
 });
