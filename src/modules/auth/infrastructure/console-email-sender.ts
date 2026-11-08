@@ -4,10 +4,6 @@ import type {
   EmailSender,
 } from "../application/ports/email-sender.port.ts";
 
-/**
- * Para desarrollo sin RESEND_API_KEY: escribe el correo en la consola. En
- * producción no envía nada, para no dejar códigos en los registros.
- */
 export class ConsoleEmailSender implements EmailSender {
   constructor(private readonly isProduction: boolean) {}
 

@@ -10,8 +10,6 @@ const schema = z.object({
     .default("7d"),
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.string().default("development"),
-  // Correos de restablecer contraseña (RF-04). Sin clave, en desarrollo el
-  // correo se escribe en la consola.
   RESEND_API_KEY: z
     .string()
     .optional()

@@ -6,7 +6,6 @@ import type {
 
 const RESEND_URL = "https://api.resend.com/emails";
 
-/** Envía correos con la API de Resend (https://resend.com/docs). */
 export class ResendEmailSender implements EmailSender {
   constructor(
     private readonly apiKey: string,
