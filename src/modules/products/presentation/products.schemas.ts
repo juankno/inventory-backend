@@ -12,3 +12,7 @@ export const createProductSchema = z.strictObject({
   minStock: amount.optional(),
   code: z.string().trim().min(1).max(32).optional(),
 });
+
+export const codeParamsSchema = z.strictObject({
+  code: z.string().trim().min(1).max(32),
+});

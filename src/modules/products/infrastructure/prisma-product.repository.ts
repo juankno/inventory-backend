@@ -82,4 +82,21 @@ export class PrismaProductRepository implements ProductRepository {
       throw error;
     }
   }
+
+  async findActiveByCode(
+    businessId: string,
+    code: string,
+  ): Promise<Product | null> {
+    const row = await this.prisma.product.findUnique({
+      where: {
+        businessId_code: {
+          businessId,
+          code,
+        },
+        isActive: true,
+      },
+      select: productSelect,
+    });
+    return row ? toProduct(row) : null;
+  }
 }

@@ -52,6 +52,10 @@ export const errorCatalog = {
     status: 500,
     message: "Ocurrió un error inesperado. Intenta de nuevo.",
   },
+  CODE_NOT_RECOGNIZED: {
+    status: 404,
+    message: "Este código no corresponde a un producto de tu inventario.",
+  },
 } as const satisfies Record<string, { status: ErrorStatus; message: string }>;
 
 export type ErrorCode = keyof typeof errorCatalog;

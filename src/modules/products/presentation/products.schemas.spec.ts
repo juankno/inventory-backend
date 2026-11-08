@@ -1,4 +1,4 @@
-import { createProductSchema } from "./products.schemas.ts";
+import { codeParamsSchema, createProductSchema } from "./products.schemas.ts";
 
 const validBody = {
   name: "Arroz Diana 500 g",
@@ -58,6 +58,42 @@ describe("createProductSchema", () => {
     ["an id chosen by the client", { id: "product-1" }],
   ])("should reject %s", (_case, override) => {
     const result = createProductSchema.safeParse({ ...validBody, ...override });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("codeParamsSchema", () => {
+  it.each(["7702004003508", "INV-7KQ2M9XA4T"])("should accept the code %s", (code) => {
+    const result = codeParamsSchema.safeParse({ code });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should trim the code", () => {
+    const params = { code: "  INV-7KQ2M9XA4T " };
+
+    const result = codeParamsSchema.parse(params);
+
+    expect(result.code).toBe("INV-7KQ2M9XA4T");
+  });
+
+  it.each(["", "   "])("should reject an empty code %j", (code) => {
+    const result = codeParamsSchema.safeParse({ code });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject a code longer than 32 characters", () => {
+    const params = { code: "1".repeat(33) };
+
+    const result = codeParamsSchema.safeParse(params);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject the code sent as a plain string instead of the params object", () => {
+    const result = codeParamsSchema.safeParse("7702004003508");
 
     expect(result.success).toBe(false);
   });
