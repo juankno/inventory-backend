@@ -9,6 +9,7 @@ import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/pri
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
 import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
+import { GetLowStockAlerts } from "./modules/inventory/application/use-cases/get-low-stock-alerts/get-low-stock-alerts.use-case.ts";
 import { GetMovementHistory } from "./modules/inventory/application/use-cases/get-movement-history/get-movement-history.use-case.ts";
 import { GetProduct } from "./modules/inventory/application/use-cases/get-product/get-product.use-case.ts";
 import { ListInventory } from "./modules/inventory/application/use-cases/list-inventory/list-inventory.use-case.ts";
@@ -75,6 +76,7 @@ export function buildDependencies(config: Config): AppDependencies {
       listInventory: new ListInventory(inventoryQueries),
       getProduct: new GetProduct(inventoryQueries),
       getMovementHistory: new GetMovementHistory(inventoryQueries),
+      getLowStockAlerts: new GetLowStockAlerts(inventoryQueries),
     },
   };
 }

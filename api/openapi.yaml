@@ -673,6 +673,51 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /products/low-stock:
+    get:
+      tags: [Products]
+      summary: Productos agotados o por agotarse (RF-16)
+      description: |
+        Productos activos del negocio que necesitan reposición: primero los agotados
+        (`OUT_OF_STOCK`) y después los que están en su existencia mínima o por debajo
+        (`LOW_STOCK`), cada grupo en orden alfabético. La app muestra el contador en la
+        pantalla principal con la cantidad de elementos.
+
+        Un producto sin `minStock` solo aparece si se agota.
+      operationId: getLowStockAlerts
+      responses:
+        "200":
+          description: Productos que necesitan atención. Un arreglo vacío si ninguno.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryProduct"
+              example:
+                - id: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  name: Jabón de baño
+                  unit: UNIT
+                  stock: 0
+                  salePrice: 4200
+                  minStock: 3
+                  codeType: INTERNAL
+                  code: INV-7KQ2M9XA4T
+                  status: OUT_OF_STOCK
+                - id: 8b2e4d1a-6c3f-4a9e-b1d7-5f0e2c3a4b6d
+                  name: Atún en lata
+                  unit: UNIT
+                  stock: 2
+                  salePrice: 6500
+                  minStock: 5
+                  codeType: GTIN
+                  code: "7702004003508"
+                  status: LOW_STOCK
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /products/{id}:
     get:
       tags: [Products]
