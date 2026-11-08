@@ -24,6 +24,8 @@ tags:
     description: Estado del servicio
   - name: Auth
     description: Registro, inicio de sesión y restablecimiento de la contraseña del comerciante
+  - name: Products
+    description: Productos del inventario del negocio
 
 paths:
   /health:
@@ -286,6 +288,109 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /products:
+    post:
+      tags: [Products]
+      summary: Registra un producto con o sin código de barras (RF-05, RF-06)
+      description: |
+        Crea un producto en el negocio del token. El negocio nunca se envía en el cuerpo.
+
+        - **Con `code`:** es un código de barras (GTIN) de 8 o 13 dígitos. La app normaliza
+          los UPC antes de enviarlos (UPC-A → 13 dígitos con un 0 delante). El backend vuelve a
+          validar el dígito de control.
+        - **Sin `code`:** el backend genera un identificador interno `INV-` + 10 caracteres,
+          que la app usa para imprimir el QR.
+        - Si `stock` es mayor que 0, se registra a la vez un movimiento de entrada con esa
+          cantidad, para que el historial del producto empiece completo.
+        - `stock`, `salePrice` y `minStock` admiten máximo 2 decimales. Con `unit: UNIT`, el
+          `stock` debe ser entero.
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+            examples:
+              withBarcode:
+                summary: Con código de barras
+                value:
+                  name: Arroz Diana 500 g
+                  unit: UNIT
+                  stock: 24
+                  salePrice: 3500
+                  minStock: 6
+                  code: "7702004003508"
+              withoutCode:
+                summary: Sin código (el backend genera el identificador interno)
+                value:
+                  name: Queso campesino
+                  unit: KILOGRAM
+                  stock: 2.5
+                  salePrice: 22000
+      responses:
+        "201":
+          description: Producto creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+              example:
+                id: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                name: Queso campesino
+                unit: KILOGRAM
+                stock: 2.5
+                salePrice: 22000
+                minStock: null
+                codeType: INTERNAL
+                code: INV-7KQ2M9XA4T
+        "400":
+          description: |
+            La petición no se puede procesar:
+
+            - `VALIDATION_ERROR`: falta un campo, sobra un campo (por ejemplo `businessId` o
+              `codeType`), el nombre no mide entre 2 y 80 caracteres, la unidad no existe o
+              una cantidad es negativa.
+            - `INVALID_GTIN`: el código no es un GTIN de 8 o 13 dígitos con dígito de control
+              válido.
+            - `INVALID_QUANTITY`: una cantidad tiene más de 2 decimales, o el `stock` no es
+              entero con `unit: UNIT`.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+                invalidGtin:
+                  summary: Código de barras inválido
+                  value:
+                    code: INVALID_GTIN
+                    message: El código de barras no es válido. Escanéalo de nuevo.
+                invalidQuantity:
+                  summary: Cantidad inválida
+                  value:
+                    code: INVALID_QUANTITY
+                    message: "Revisa las cantidades: usa máximo 2 decimales y números enteros si vendes por unidad."
+                invalidJson:
+                  $ref: "#/components/examples/InvalidJson"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: |
+            El código de barras ya está registrado en este negocio. Para abrir el producto
+            existente, la app lo busca por código (flujo de identificación).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CODE_ALREADY_REGISTERED
+                message: Ya existe un producto con este código en tu negocio.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -408,6 +513,63 @@ components:
             name:
               type: string
 
+    CreateProductRequest:
+      type: object
+      additionalProperties: false
+      required: [name, unit, stock]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: Se guarda sin espacios al inicio ni al final.
+        unit:
+          $ref: "#/components/schemas/Unit"
+        stock:
+          type: number
+          minimum: 0
+          description: Existencia inicial. Máximo 2 decimales; entero si `unit` es `UNIT`.
+        salePrice:
+          type: number
+          minimum: 0
+          description: Precio de venta en pesos. Máximo 2 decimales.
+        minStock:
+          type: number
+          minimum: 0
+          description: Existencia mínima para las alertas. Máximo 2 decimales.
+        code:
+          type: string
+          maxLength: 32
+          description: GTIN de 8 o 13 dígitos ya normalizado. Si no se envía, el backend genera uno interno.
+
+    Product:
+      type: object
+      required: [id, name, unit, stock, salePrice, minStock, codeType, code]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          $ref: "#/components/schemas/Unit"
+        stock:
+          type: number
+        salePrice:
+          type: [number, "null"]
+        minStock:
+          type: [number, "null"]
+        codeType:
+          type: string
+          enum: [GTIN, INTERNAL]
+        code:
+          type: string
+          description: El GTIN enviado o el identificador interno `INV-XXXXXXXXXX` que va en el QR.
+
+    Unit:
+      type: string
+      enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]
+
     Error:
       type: object
       required: [code, message]
@@ -425,6 +587,9 @@ components:
             - EMAIL_NOT_SENT
             - UNAUTHORIZED
             - NOT_FOUND
+            - INVALID_GTIN
+            - INVALID_QUANTITY
+            - CODE_ALREADY_REGISTERED
             - INTERNAL_ERROR
         message:
           type: string

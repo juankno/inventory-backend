@@ -19,7 +19,16 @@ export const errorCatalog = {
     message:
       "Ya existe una cuenta con este correo. Inicia sesión o usa otro correo.",
   },
-  PRODUCT_CODE_ALREADY_EXISTS: {
+  INVALID_GTIN: {
+    status: 400,
+    message: "El código de barras no es válido. Escanéalo de nuevo.",
+  },
+  INVALID_QUANTITY: {
+    status: 400,
+    message:
+      "Revisa las cantidades: usa máximo 2 decimales y números enteros si vendes por unidad.",
+  },
+  CODE_ALREADY_REGISTERED: {
     status: 409,
     message: "Ya existe un producto con este código en tu negocio.",
   },

@@ -1,10 +1,14 @@
 import cors from "cors";
-import express, { Router } from "express";
+import express, { Router, type RequestHandler } from "express";
 
 import {
   authRouter,
   type AuthUseCases,
 } from "./modules/auth/presentation/auth.router.ts";
+import {
+  productsRouter,
+  type ProductsUseCases,
+} from "./modules/products/presentation/products.router.ts";
 import { docsRouter } from "./shared/docs/docs.router.ts";
 import {
   errorHandler,
@@ -12,7 +16,9 @@ import {
 } from "./shared/errors/error-handler.middleware.ts";
 
 export type AppDependencies = {
+  requireAuth: RequestHandler;
   auth: AuthUseCases;
+  products: ProductsUseCases;
 };
 
 export function createApp(deps: AppDependencies) {
@@ -25,6 +31,7 @@ export function createApp(deps: AppDependencies) {
     res.json({ status: "ok" });
   });
   api.use("/auth", authRouter(deps.auth));
+  api.use("/products", deps.requireAuth, productsRouter(deps.products));
   api.use(docsRouter());
 
   app.use("/api/v1", api);

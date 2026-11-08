@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts";
 import { AppError } from "../../../shared/errors/app-error.ts";
 import type {
@@ -55,6 +57,17 @@ export class PrismaProductRepository implements ProductRepository {
           minStock: data.minStock,
           codeType: data.codeType,
           code: data.code,
+          ...(data.stock > 0 && {
+            movements: {
+              create: {
+                userId: data.createdBy,
+                type: "INBOUND",
+                quantity: data.stock,
+                resultingStock: data.stock,
+                idempotencyKey: randomUUID(),
+              },
+            },
+          }),
         },
         select: productSelect,
       });
@@ -64,7 +77,7 @@ export class PrismaProductRepository implements ProductRepository {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new AppError("PRODUCT_CODE_ALREADY_EXISTS");
+        throw new AppError("CODE_ALREADY_REGISTERED");
       }
       throw error;
     }
