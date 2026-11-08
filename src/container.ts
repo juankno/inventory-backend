@@ -8,6 +8,10 @@ import { JwtTokenService } from "./modules/auth/infrastructure/jwt-token-service
 import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/prisma-password-reset.repository.ts";
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
+import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
+import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
+import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
+import { PrismaProductRepository } from "./modules/products/infrastructure/prisma-product.repository.ts";
 import { createEmailSender } from "./shared/email/create-email-sender.ts";
 import type { Config } from "./shared/infrastructure/config.ts";
 import { createPrismaClient } from "./shared/infrastructure/prisma.ts";
@@ -25,6 +29,7 @@ export function buildDependencies(config: Config): AppDependencies {
   const emailSender = createEmailSender(config);
 
   return {
+    requireAuth: requireAuthMiddleware(tokenService),
     auth: {
       registerAccount: new RegisterAccount(
         userRepository,
@@ -43,6 +48,12 @@ export function buildDependencies(config: Config): AppDependencies {
         userRepository,
         resetRepository,
         passwordHasher,
+      ),
+    },
+    products: {
+      createProduct: new CreateProduct(
+        new PrismaProductRepository(prisma),
+        new Base32IdGenerator(),
       ),
     },
   };
