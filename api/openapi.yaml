@@ -26,6 +26,8 @@ tags:
     description: Registro, inicio de sesión y restablecimiento de la contraseña del comerciante
   - name: Products
     description: Productos del inventario del negocio
+  - name: Movements
+    description: Entradas, salidas y ajustes de existencias
 
 paths:
   /health:
@@ -471,6 +473,148 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /movements:
+    post:
+      tags: [Movements]
+      summary: Registra una entrada, una salida o un ajuste de existencias (RF-11 a RF-13)
+      description: |
+        Es la única forma de cambiar la existencia de un producto. El movimiento y la nueva
+        existencia se guardan juntos: si algo falla, no cambia ninguno de los dos.
+
+        | `type` | `quantity` que se envía | `reason` | Nueva existencia |
+        | --- | --- | --- | --- |
+        | `INBOUND` | Lo que entra, mayor que 0 | No se envía | existencia + cantidad |
+        | `OUTBOUND` | Lo que sale, mayor que 0 | Obligatorio: `SALE`, `CONSUMPTION` o `LOSS` | existencia − cantidad |
+        | `ADJUSTMENT` | Lo **contado** en el conteo físico, mayor o igual a 0 | No se envía | lo contado |
+
+        - Las cantidades admiten máximo 2 decimales y deben ser enteras si el producto se vende
+          por unidad (`UNIT`).
+        - En un ajuste, el movimiento guarda la **diferencia** entre lo contado y la existencia
+          anterior (puede ser negativa).
+        - **Idempotencia:** la app genera un UUID nuevo en `idempotencyKey` por cada acción del
+          usuario y lo reutiliza si reintenta la misma petición. Si la clave ya se usó, se
+          devuelve el movimiento que ya existía (200) y la existencia no cambia dos veces.
+      operationId: registerMovement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterMovementRequest"
+            examples:
+              sale:
+                summary: Venta
+                value:
+                  productId: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  type: OUTBOUND
+                  quantity: 2
+                  reason: SALE
+                  idempotencyKey: 9b7a2d5e-6f70-4192-8a4d-3f1c2b9e4c1e
+              inbound:
+                summary: Entrada de mercancía
+                value:
+                  productId: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  type: INBOUND
+                  quantity: 12
+                  idempotencyKey: 1e4c9b7a-2d5e-4f70-8192-3f1c2b9e8a4d
+              adjustment:
+                summary: Ajuste por conteo físico
+                value:
+                  productId: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  type: ADJUSTMENT
+                  quantity: 7
+                  idempotencyKey: 8a4d3f1c-2b9e-4c1e-9b7a-2d5e6f708192
+      responses:
+        "201":
+          description: Movimiento registrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovementResult"
+              example:
+                movement:
+                  id: 5e6f7081-92a4-4d1c-8b9e-3f1c2b9e4c1e
+                  productId: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  type: OUTBOUND
+                  reason: SALE
+                  quantity: 2
+                  resultingStock: 22
+                  createdAt: "2026-11-08T15:30:00.000Z"
+                stock: 22
+        "200":
+          description: |
+            No se registró un movimiento nuevo, en uno de dos casos:
+
+            - **Reintento:** la `idempotencyKey` ya se usó. `movement` es el que ya existía y
+              `stock` es la existencia que dejó ese movimiento.
+            - **Ajuste sin diferencia:** lo contado coincide con la existencia. `movement` es
+              `null` y `stock` es la existencia, que no cambió.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovementResult"
+              example:
+                movement: null
+                stock: 7
+        "400":
+          description: |
+            La petición no se puede procesar:
+
+            - `VALIDATION_ERROR`: falta un campo, sobra uno, `productId` o `idempotencyKey` no
+              son UUID, el tipo o el motivo no existen, falta `reason` en una salida o llega en
+              una entrada o un ajuste.
+            - `INVALID_QUANTITY`: la cantidad tiene más de 2 decimales, no es entera con
+              `UNIT`, o es 0 en una entrada o una salida.
+            - `INVALID_JSON`: el cuerpo no es un JSON válido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+                invalidQuantity:
+                  summary: Cantidad inválida
+                  value:
+                    code: INVALID_QUANTITY
+                    message: "Revisa las cantidades: usa máximo 2 decimales y números enteros si vendes por unidad."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: |
+            `PRODUCT_NOT_FOUND`: el producto no existe, fue dado de baja o pertenece a otro
+            negocio. Los tres casos responden igual.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: PRODUCT_NOT_FOUND
+                message: Este producto no está en tu inventario.
+        "409":
+          description: |
+            - `INSUFFICIENT_STOCK`: la salida es mayor que la existencia. No cambia nada; la
+              app puede ofrecer registrar un ajuste.
+            - `IDEMPOTENCY_KEY_CONFLICT`: la `idempotencyKey` no se puede usar. No ocurre si la
+              app genera un UUID nuevo por cada acción.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                insufficientStock:
+                  summary: Existencia insuficiente
+                  value:
+                    code: INSUFFICIENT_STOCK
+                    message: No hay existencias suficientes para esta salida. Revisa la cantidad o haz un ajuste.
+                idempotencyKeyConflict:
+                  summary: Clave de idempotencia no válida
+                  value:
+                    code: IDEMPOTENCY_KEY_CONFLICT
+                    message: No pudimos registrar el movimiento. Intenta de nuevo.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -650,6 +794,68 @@ components:
       type: string
       enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]
 
+    RegisterMovementRequest:
+      type: object
+      additionalProperties: false
+      required: [productId, type, quantity, idempotencyKey]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [INBOUND, OUTBOUND, ADJUSTMENT]
+        quantity:
+          type: number
+          minimum: 0
+          description: Lo que entra o sale; en un ajuste, lo contado.
+        reason:
+          type: string
+          enum: [SALE, CONSUMPTION, LOSS]
+          description: Obligatorio solo en `OUTBOUND`.
+        idempotencyKey:
+          type: string
+          format: uuid
+          description: UUID que la app genera por cada acción del usuario y repite al reintentar.
+
+    Movement:
+      type: object
+      required: [id, productId, type, reason, quantity, resultingStock, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [INBOUND, OUTBOUND, ADJUSTMENT]
+        reason:
+          type: [string, "null"]
+          enum: [SALE, CONSUMPTION, LOSS, null]
+        quantity:
+          type: number
+          description: Lo que entró o salió; en un ajuste, la diferencia (puede ser negativa).
+        resultingStock:
+          type: number
+          description: Existencia del producto después del movimiento.
+        createdAt:
+          type: string
+          format: date-time
+
+    MovementResult:
+      type: object
+      required: [movement, stock]
+      properties:
+        movement:
+          oneOf:
+            - $ref: "#/components/schemas/Movement"
+            - type: "null"
+        stock:
+          type: number
+          description: Existencia actual del producto. La app actualiza la pantalla con este valor.
+
     Error:
       type: object
       required: [code, message]
@@ -671,6 +877,9 @@ components:
             - INVALID_QUANTITY
             - CODE_ALREADY_REGISTERED
             - CODE_NOT_RECOGNIZED
+            - PRODUCT_NOT_FOUND
+            - INSUFFICIENT_STOCK
+            - IDEMPOTENCY_KEY_CONFLICT
             - INTERNAL_ERROR
         message:
           type: string
