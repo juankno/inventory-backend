@@ -6,6 +6,10 @@ import {
   type AuthUseCases,
 } from "./modules/auth/presentation/auth.router.ts";
 import {
+  inventoryRouter,
+  type InventoryUseCases,
+} from "./modules/inventory/presentation/inventory.router.ts";
+import {
   movementsRouter,
   type MovementsUseCases,
 } from "./modules/movements/presentation/movements.router.ts";
@@ -24,6 +28,7 @@ export type AppDependencies = {
   auth: AuthUseCases;
   products: ProductsUseCases;
   movements: MovementsUseCases;
+  inventory: InventoryUseCases;
 };
 
 export function createApp(deps: AppDependencies) {
@@ -36,7 +41,12 @@ export function createApp(deps: AppDependencies) {
     res.json({ status: "ok" });
   });
   api.use("/auth", authRouter(deps.auth));
-  api.use("/products", deps.requireAuth, productsRouter(deps.products));
+  api.use(
+    "/products",
+    deps.requireAuth,
+    productsRouter(deps.products),
+    inventoryRouter(deps.inventory),
+  );
   api.use("/movements", deps.requireAuth, movementsRouter(deps.movements));
   api.use(docsRouter());
 

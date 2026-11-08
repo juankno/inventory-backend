@@ -291,6 +291,64 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   /products:
+    get:
+      tags: [Products]
+      summary: Lista el inventario del negocio (RF-14)
+      description: |
+        Devuelve todos los productos **activos** del negocio del token, en orden alfabético por
+        nombre, cada uno con su estado de existencias. No se pagina: el inventario de un
+        micronegocio cabe en una respuesta (hasta 500 productos en menos de 1 s, RR-04).
+      operationId: listInventory
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Filtra por nombre, sin distinguir mayúsculas. Se ignoran los espacios al inicio y al final.
+          schema:
+            type: string
+            maxLength: 80
+          example: arroz
+      responses:
+        "200":
+          description: Productos del inventario. Un arreglo vacío si no hay coincidencias.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryProduct"
+              example:
+                - id: 8b2e4d1a-6c3f-4a9e-b1d7-5f0e2c3a4b6d
+                  name: Arroz Diana 500 g
+                  unit: UNIT
+                  stock: 24
+                  salePrice: 3500
+                  minStock: 6
+                  codeType: GTIN
+                  code: "7702004003508"
+                  status: OK
+                - id: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  name: Jabón de baño
+                  unit: UNIT
+                  stock: 0
+                  salePrice: 4200
+                  minStock: 3
+                  codeType: INTERNAL
+                  code: INV-7KQ2M9XA4T
+                  status: OUT_OF_STOCK
+        "400":
+          description: "`VALIDATION_ERROR`: `search` tiene más de 80 caracteres o llegó un parámetro desconocido."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
     post:
       tags: [Products]
       summary: Registra un producto con o sin código de barras (RF-05, RF-06)
@@ -615,6 +673,92 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Detalle de un producto (RF-15)
+      operationId: getProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Producto con su estado de existencias.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryProduct"
+        "400":
+          description: "`VALIDATION_ERROR`: el id no es un UUID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProductNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /products/{id}/movements:
+    get:
+      tags: [Products]
+      summary: Historial de movimientos de un producto (RF-15)
+      description: |
+        Movimientos del producto del más reciente al más antiguo, de 50 en 50. Para pedir la
+        página siguiente, la app envía en `cursor` el `nextCursor` de la respuesta anterior;
+        cuando es `null`, no hay más.
+      operationId: getMovementHistory
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+        - name: cursor
+          in: query
+          required: false
+          description: El `nextCursor` de la página anterior.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Una página del historial.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovementHistoryPage"
+              example:
+                items:
+                  - id: 5e6f7081-92a4-4d1c-8b9e-3f1c2b9e4c1e
+                    type: OUTBOUND
+                    reason: SALE
+                    quantity: 2
+                    resultingStock: 22
+                    createdAt: "2026-11-08T15:30:00.000Z"
+                  - id: 1c2b9e4c-1e5e-4f70-8192-a44d8b9e3f1c
+                    type: INBOUND
+                    reason: null
+                    quantity: 24
+                    resultingStock: 24
+                    createdAt: "2026-11-01T09:00:00.000Z"
+                nextCursor: null
+        "400":
+          description: "`VALIDATION_ERROR`: el id o el cursor no son UUID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProductNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -627,6 +771,15 @@ components:
 
         Toda ruta protegida responde 401 `UNAUTHORIZED` (ver `#/components/responses/Unauthorized`)
         si el token falta, es inválido o venció.
+
+  parameters:
+    ProductId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     RegisterRequest:
@@ -856,6 +1009,57 @@ components:
           type: number
           description: Existencia actual del producto. La app actualiza la pantalla con este valor.
 
+    InventoryProduct:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+        - type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/StockStatus"
+
+    StockStatus:
+      type: string
+      enum: [OUT_OF_STOCK, LOW_STOCK, OK]
+      description: |
+        - `OUT_OF_STOCK`: la existencia es 0.
+        - `LOW_STOCK`: tiene existencia mínima y la existencia es igual o menor.
+        - `OK`: cualquier otro caso.
+
+    HistoryMovement:
+      type: object
+      required: [id, type, reason, quantity, resultingStock, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [INBOUND, OUTBOUND, ADJUSTMENT]
+        reason:
+          type: [string, "null"]
+          enum: [SALE, CONSUMPTION, LOSS, null]
+        quantity:
+          type: number
+          description: Lo que entró o salió; en un ajuste, la diferencia (puede ser negativa).
+        resultingStock:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    MovementHistoryPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryMovement"
+        nextCursor:
+          type: [string, "null"]
+          format: uuid
+
     Error:
       type: object
       required: [code, message]
@@ -898,6 +1102,15 @@ components:
         message: La petición no tiene un formato válido.
 
   responses:
+    ProductNotFound:
+      description: "`PRODUCT_NOT_FOUND`: el producto no existe, fue dado de baja o pertenece a otro negocio."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: PRODUCT_NOT_FOUND
+            message: Este producto no está en tu inventario.
     Unauthorized:
       description: |
         La ruta es protegida y no hay una sesión válida. Se responde igual en todos los casos,

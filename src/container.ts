@@ -9,6 +9,10 @@ import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/pri
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
 import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
+import { GetMovementHistory } from "./modules/inventory/application/use-cases/get-movement-history/get-movement-history.use-case.ts";
+import { GetProduct } from "./modules/inventory/application/use-cases/get-product/get-product.use-case.ts";
+import { ListInventory } from "./modules/inventory/application/use-cases/list-inventory/list-inventory.use-case.ts";
+import { PrismaInventoryQueries } from "./modules/inventory/infrastructure/prisma-inventory-queries.repository.ts";
 import { RegisterMovement } from "./modules/movements/application/use-cases/register-movement/register-movement.use-case.ts";
 import { PrismaMovementRepository } from "./modules/movements/infrastructure/prisma-movement.repository.ts";
 import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
@@ -31,6 +35,7 @@ export function buildDependencies(config: Config): AppDependencies {
   );
   const emailSender = createEmailSender(config);
   const productRepository = new PrismaProductRepository(prisma);
+  const inventoryQueries = new PrismaInventoryQueries(prisma);
 
   return {
     requireAuth: requireAuthMiddleware(tokenService),
@@ -65,6 +70,11 @@ export function buildDependencies(config: Config): AppDependencies {
       registerMovement: new RegisterMovement(
         new PrismaMovementRepository(prisma),
       ),
+    },
+    inventory: {
+      listInventory: new ListInventory(inventoryQueries),
+      getProduct: new GetProduct(inventoryQueries),
+      getMovementHistory: new GetMovementHistory(inventoryQueries),
     },
   };
 }
