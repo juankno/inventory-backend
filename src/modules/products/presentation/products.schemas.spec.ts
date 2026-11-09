@@ -1,9 +1,9 @@
 import {
   codeParamsSchema,
   createProductSchema,
-  productIdParamsSchema,
   updateProductSchema,
 } from "./products.schemas.ts";
+import { productIdParamsSchema } from "../../../shared/validation/schemas.ts";
 
 const validBody = {
   name: "Arroz Diana 500 g",

@@ -3,13 +3,13 @@ import { AppError } from "../../../../shared/errors/app-error.ts";
 import { toBogotaClock, toDateRange } from "../../domain/report-period.ts";
 import {
   MAX_REPORT_ROWS,
-  roundMoney,
   unitLabel,
   type RenderedReport,
   type ReportMovement,
   type ReportProduct,
   type ReportSheet,
 } from "../../domain/report.model.ts";
+import { roundToCents } from "../../../../shared/domain/quantity.ts";
 import type { ReportQueries } from "../ports/report-queries.repository.ts";
 import type { ReportRenderer } from "../ports/report-renderer.port.ts";
 
@@ -40,10 +40,10 @@ const signedQuantity = ({ type, quantity }: ReportMovement): number =>
   type === "OUTBOUND" ? -quantity : quantity;
 
 const stockValue = ({ stock, salePrice }: ReportProduct): number | null =>
-  salePrice === null ? null : roundMoney(stock * salePrice);
+  salePrice === null ? null : roundToCents(stock * salePrice);
 
 const saleTotal = ({ quantity, unitPrice }: ReportMovement): number | null =>
-  unitPrice === null ? null : roundMoney(quantity * unitPrice);
+  unitPrice === null ? null : roundToCents(quantity * unitPrice);
 
 const rangeSuffix = (from: string, to: string): string =>
   from === to ? from : `${from}-a-${to}`;
@@ -81,7 +81,7 @@ const inventorySheet = (products: ReportProduct[]): ReportSheet => ({
     null,
     null,
     null,
-    roundMoney(products.reduce((sum, item) => sum + (stockValue(item) ?? 0), 0)),
+    roundToCents(products.reduce((sum, item) => sum + (stockValue(item) ?? 0), 0)),
     null,
   ],
 });
@@ -133,8 +133,8 @@ const groupByProduct = (sales: ReportMovement[]): ProductSales[] => {
       withoutPrice: 0,
     };
     const total = saleTotal(sale);
-    item.quantity = roundMoney(item.quantity + sale.quantity);
-    item.total = roundMoney(item.total + (total ?? 0));
+    item.quantity = roundToCents(item.quantity + sale.quantity);
+    item.total = roundToCents(item.total + (total ?? 0));
     if (total === null) item.withoutPrice += 1;
     byCode.set(sale.productCode, item);
   }
@@ -168,7 +168,7 @@ const salesByProductSheet = (sales: ReportMovement[]): ReportSheet => {
       null,
       null,
       null,
-      roundMoney(products.reduce((sum, item) => sum + item.total, 0)),
+      roundToCents(products.reduce((sum, item) => sum + item.total, 0)),
       products.reduce((sum, item) => sum + item.withoutPrice, 0) || null,
     ],
   };

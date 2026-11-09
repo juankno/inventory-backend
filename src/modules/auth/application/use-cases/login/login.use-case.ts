@@ -25,6 +25,8 @@ export type LoginInput = {
 };
 
 export class Login {
+  private dummyHash?: Promise<string>;
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly passwordHasher: PasswordHasher,
@@ -46,6 +48,10 @@ export class Login {
 
     const account = await this.userRepository.findAccountByEmail(email);
     if (!account) {
+      // Sin cuenta también se compara la contraseña: si no, esta respuesta llega
+      // más rápido y revela qué correos están registrados.
+      this.dummyHash ??= this.passwordHasher.hash("cuenta-inexistente");
+      await this.passwordHasher.compare(data.password, await this.dummyHash);
       await this.registerFailure(email, now);
       throw new AppError("INVALID_CREDENTIALS");
     }

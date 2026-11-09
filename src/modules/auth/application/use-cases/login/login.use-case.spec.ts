@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 import { LoginThrottleRepositoryMock } from "../../mocks/login-throttle.repository.mock.ts";
 import { PasswordHasherMock } from "../../mocks/password-hasher.mock.ts";
 import { TokenServiceMock } from "../../mocks/token-service.mock.ts";
@@ -39,6 +41,40 @@ const failLogin = (login: Login, email = validInput.email) =>
 const LOCK_MS = LOGIN_LOCK_MINUTES * 60_000;
 
 describe("Login", () => {
+  describe("response time", () => {
+    it("should compare the password even if the email has no account", async () => {
+      const userRepository = new UserRepositoryMock();
+      const passwordHasher = new PasswordHasherMock();
+      const compare = jest.spyOn(passwordHasher, "compare");
+      const login = new Login(
+        userRepository,
+        passwordHasher,
+        new TokenServiceMock(),
+        new LoginThrottleRepositoryMock(),
+      );
+
+      await expect(
+        login.execute({ email: "nadie@correo.com", password: "secreta123" }),
+      ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+
+      expect(compare).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not let the dummy password open an account", async () => {
+      const userRepository = new UserRepositoryMock();
+      const login = new Login(
+        userRepository,
+        new PasswordHasherMock(),
+        new TokenServiceMock(),
+        new LoginThrottleRepositoryMock(),
+      );
+
+      await expect(
+        login.execute({ email: "nadie@correo.com", password: "cuenta-inexistente" }),
+      ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    });
+  });
+
   describe("attempt limit", () => {
     it("should lock the email after too many failed attempts, even with the right password", async () => {
       const { login } = await setup();

@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { productIdParamsSchema } from "../../../shared/validation/schemas.ts";
 import { validate } from "../../../shared/validation/validate.ts";
 import type { CreateProduct } from "../application/use-cases/create-product/create-product.use-case.ts";
 import type { DeactivateProduct } from "../application/use-cases/deactivate-product/deactivate-product.use-case.ts";
@@ -10,7 +11,6 @@ import { toProductResponse } from "./product.response.ts";
 import {
   codeParamsSchema,
   createProductSchema,
-  productIdParamsSchema,
   updateProductSchema,
 } from "./products.schemas.ts";
 

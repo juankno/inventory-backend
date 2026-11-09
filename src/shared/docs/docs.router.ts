@@ -5,6 +5,8 @@ import { Router } from "express";
 
 const openapiPath = path.join(process.cwd(), "api/openapi.yaml");
 
+let openapi: string | undefined;
+
 const scalarHtml = `<!doctype html>
 <html>
   <head>
@@ -22,7 +24,8 @@ export const docsRouter = (): Router => {
   const router = Router();
 
   router.get("/openapi.yaml", (_req, res) => {
-    res.type("application/yaml").send(readFileSync(openapiPath, "utf-8"));
+    openapi ??= readFileSync(openapiPath, "utf-8");
+    res.type("application/yaml").send(openapi);
   });
 
   router.get("/docs", (_req, res) => {

@@ -1,6 +1,6 @@
 import z from "zod";
 
-const MAX_DECIMAL_12_2 = 9_999_999_999.99;
+import { MAX_DECIMAL_12_2 } from "../../../shared/validation/schemas.ts";
 
 const amount = z.number().min(0).max(MAX_DECIMAL_12_2);
 
@@ -19,10 +19,6 @@ export const createProductSchema = z.strictObject({
 
 export const codeParamsSchema = z.strictObject({
   code: z.string().trim().min(1).max(32),
-});
-
-export const productIdParamsSchema = z.strictObject({
-  id: z.uuid(),
 });
 
 export const updateProductSchema = z

@@ -1,10 +1,10 @@
 import { currentPeriods } from "../../domain/report-period.ts";
 import {
   MAX_REPORT_ROWS,
-  roundMoney,
   type ReportMovement,
   type ReportProduct,
 } from "../../domain/report.model.ts";
+import { roundToCents } from "../../../../shared/domain/quantity.ts";
 import type { ReportQueries } from "../ports/report-queries.repository.ts";
 
 const TOP_PRODUCTS = 5;
@@ -32,7 +32,7 @@ export interface SalesSummary {
 
 const periodSales = (sales: ReportMovement[]): PeriodSales => ({
   sales: sales.length,
-  total: roundMoney(
+  total: roundToCents(
     sales.reduce((sum, sale) => sum + sale.quantity * (sale.unitPrice ?? 0), 0),
   ),
 });
@@ -52,8 +52,8 @@ export class GetSalesSummary {
         quantity: 0,
         total: 0,
       };
-      item.quantity = roundMoney(item.quantity + sale.quantity);
-      item.total = roundMoney(item.total + sale.quantity * (sale.unitPrice ?? 0));
+      item.quantity = roundToCents(item.quantity + sale.quantity);
+      item.total = roundToCents(item.total + sale.quantity * (sale.unitPrice ?? 0));
       products.set(sale.productCode, item);
     }
 

@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { productIdParamsSchema } from "../../../shared/validation/schemas.ts";
 import { validate } from "../../../shared/validation/validate.ts";
 import type { GetLowStockAlerts } from "../application/use-cases/get-low-stock-alerts/get-low-stock-alerts.use-case.ts";
 import type { GetMovementHistory } from "../application/use-cases/get-movement-history/get-movement-history.use-case.ts";
@@ -10,7 +11,6 @@ import {
   deletedProductsQuerySchema,
   listInventoryQuerySchema,
   movementHistoryQuerySchema,
-  productIdParamsSchema,
 } from "./inventory.schemas.ts";
 
 export type InventoryUseCases = {

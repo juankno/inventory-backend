@@ -1,8 +1,8 @@
 import {
   listInventoryQuerySchema,
   movementHistoryQuerySchema,
-  productIdParamsSchema,
 } from "./inventory.schemas.ts";
+import { productIdParamsSchema } from "../../../shared/validation/schemas.ts";
 
 const PRODUCT_ID = "3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192";
 

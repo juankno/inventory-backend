@@ -38,6 +38,7 @@ export type AppDependencies = {
 
 export function createApp(deps: AppDependencies) {
   const app = express();
+  app.disable("x-powered-by");
   app.use(cors());
   app.use(express.json());
 
