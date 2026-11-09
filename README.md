@@ -51,6 +51,15 @@ Eliminar un producto no borra nada: se marca con `is_active = false` y la fecha 
 
 Por ahora ningún proceso borra datos. Si más adelante se limpia con un cron, debe usar `deleted_at` para respetar un tiempo de retención, y tener en cuenta que `movements` referencia a `products`.
 
+## Reportes
+
+`/reports/inventory`, `/reports/movements` y `/reports/sales` devuelven archivos de Excel, y `/reports/summary`, el resumen de ventas.
+
+- **Precio de cada venta:** las salidas guardan en `unit_price` el precio que tenía el producto. Las anteriores a esta columna no lo tienen: no suman al total y se cuentan como "ventas sin precio".
+- **Deshacer:** el ajuste guarda en `reverts_movement_id` el movimiento que revierte, y esa venta deja de contar.
+- **Sin costos:** como no se guarda el costo de compra, se reportan ventas, no ganancias.
+- **Fechas:** los períodos y las fechas de los archivos están en hora de Colombia.
+
 ## Scripts
 
 | Script | Qué hace |

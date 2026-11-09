@@ -21,6 +21,8 @@ export interface RegisterMovementInput {
   quantity: number;
   reason?: OutboundReason;
   idempotencyKey: string;
+  /** Solo en los ajustes de "Deshacer": el movimiento que este ajuste revierte. */
+  revertsMovementId?: string;
 }
 
 export interface RegisterMovementResult {
@@ -36,9 +38,23 @@ export class RegisterMovement {
     if (!hasValidReason(data.type, data.reason)) {
       throw new AppError("VALIDATION_ERROR");
     }
+    if (data.revertsMovementId !== undefined && data.type !== "ADJUSTMENT") {
+      throw new AppError("VALIDATION_ERROR");
+    }
 
     const replay = await this.findReplay(data);
     if (replay) return replay;
+
+    if (
+      data.revertsMovementId !== undefined &&
+      !(await this.movementRepository.belongsToProduct(
+        data.businessId,
+        data.productId,
+        data.revertsMovementId,
+      ))
+    ) {
+      throw new AppError("VALIDATION_ERROR");
+    }
 
     for (let attempt = 1; attempt <= MAX_STOCK_ATTEMPTS; attempt++) {
       const product = await this.movementRepository.findActiveProduct(
@@ -66,6 +82,8 @@ export class RegisterMovement {
           quantity: change.quantity,
           resultingStock: change.resultingStock,
           idempotencyKey: data.idempotencyKey,
+          unitPrice: data.type === "OUTBOUND" ? product.salePrice : null,
+          revertsMovementId: data.revertsMovementId ?? null,
           expectedStock: product.stock,
         });
         if (movement) {

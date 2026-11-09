@@ -20,6 +20,8 @@ const newMovement: NewMovement = {
   quantity: 4,
   resultingStock: 6,
   idempotencyKey: KEY,
+  unitPrice: 2500,
+  revertsMovementId: null,
   expectedStock: 10,
 };
 
@@ -32,6 +34,8 @@ const movementRow = {
   quantity: new Prisma.Decimal("4.00"),
   resultingStock: new Prisma.Decimal("6.00"),
   idempotencyKey: KEY,
+  unitPrice: new Prisma.Decimal("2500.00"),
+  revertsMovementId: null,
   createdAt,
 };
 
@@ -69,17 +73,21 @@ describe("PrismaMovementRepository", () => {
 
       expect(findFirst).toHaveBeenCalledWith({
         where: { id: PRODUCT_ID, businessId: "business-1", isActive: true },
-        select: { unit: true, stock: true },
+        select: { unit: true, stock: true, salePrice: true },
       });
     });
 
     it("should map the stock to a number", async () => {
       const { findFirst, repository } = setup();
-      findFirst.mockResolvedValue({ unit: "KILOGRAM", stock: new Prisma.Decimal("2.50") });
+      findFirst.mockResolvedValue({
+        unit: "KILOGRAM",
+        stock: new Prisma.Decimal("2.50"),
+        salePrice: new Prisma.Decimal("4000.00"),
+      });
 
       const product = await repository.findActiveProduct("business-1", PRODUCT_ID);
 
-      expect(product).toEqual({ unit: "KILOGRAM", stock: 2.5 });
+      expect(product).toEqual({ unit: "KILOGRAM", stock: 2.5, salePrice: 4000 });
     });
 
     it("should return null when the product is missing, inactive or from another business", async () => {
@@ -110,6 +118,8 @@ describe("PrismaMovementRepository", () => {
           quantity: 4,
           resultingStock: 6,
           idempotencyKey: KEY,
+          unitPrice: 2500,
+          revertsMovementId: null,
           createdAt,
         },
       });
@@ -155,6 +165,8 @@ describe("PrismaMovementRepository", () => {
           quantity: 4,
           resultingStock: 6,
           idempotencyKey: KEY,
+          unitPrice: 2500,
+          revertsMovementId: null,
         },
         select: expect.objectContaining({ id: true, resultingStock: true }),
       });

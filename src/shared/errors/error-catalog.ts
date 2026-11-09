@@ -37,6 +37,10 @@ export const errorCatalog = {
     message:
       "Este código es de un producto que eliminaste. Puedes restaurarlo desde Productos eliminados.",
   },
+  REPORT_TOO_LARGE: {
+    status: 400,
+    message: "Este reporte tiene demasiados datos. Elige un período más corto.",
+  },
   INVALID_CREDENTIALS: {
     status: 401,
     message: "Correo o contraseña incorrectos.",

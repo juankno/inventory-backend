@@ -17,6 +17,10 @@ import {
   productsRouter,
   type ProductsUseCases,
 } from "./modules/products/presentation/products.router.ts";
+import {
+  reportsRouter,
+  type ReportsUseCases,
+} from "./modules/reports/presentation/reports.router.ts";
 import { docsRouter } from "./shared/docs/docs.router.ts";
 import {
   errorHandler,
@@ -29,6 +33,7 @@ export type AppDependencies = {
   products: ProductsUseCases;
   movements: MovementsUseCases;
   inventory: InventoryUseCases;
+  reports: ReportsUseCases;
 };
 
 export function createApp(deps: AppDependencies) {
@@ -48,6 +53,7 @@ export function createApp(deps: AppDependencies) {
     inventoryRouter(deps.inventory),
   );
   api.use("/movements", deps.requireAuth, movementsRouter(deps.movements));
+  api.use("/reports", deps.requireAuth, reportsRouter(deps.reports));
   api.use(docsRouter());
 
   app.use("/api/v1", api);

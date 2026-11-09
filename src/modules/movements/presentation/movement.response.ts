@@ -1,6 +1,9 @@
 import type { Movement } from "../domain/models/movement.model.ts";
 
-export type MovementResponse = Omit<Movement, "userId" | "idempotencyKey">;
+export type MovementResponse = Omit<
+  Movement,
+  "userId" | "idempotencyKey" | "unitPrice" | "revertsMovementId"
+>;
 
 export const toMovementResponse = (movement: Movement): MovementResponse => {
   return {

@@ -33,6 +33,87 @@ function setup(stock = 10) {
 }
 
 describe("RegisterMovement", () => {
+  describe("sale price", () => {
+    it("should keep the current sale price on an OUTBOUND", async () => {
+      const { registerMovement, product } = setup(10);
+      product.salePrice = 2500;
+
+      const result = await registerMovement.execute(saleInput);
+
+      expect(result.movement?.unitPrice).toBe(2500);
+    });
+
+    it("should not change a past sale when the price changes later", async () => {
+      const { registerMovement, movementRepository, product } = setup(10);
+      product.salePrice = 2500;
+      await registerMovement.execute(saleInput);
+
+      product.salePrice = 9000;
+
+      expect(movementRepository.stored[0]?.movement.unitPrice).toBe(2500);
+    });
+
+    it("should leave the price empty if the product has none", async () => {
+      const { registerMovement } = setup(10);
+
+      const result = await registerMovement.execute(saleInput);
+
+      expect(result.movement?.unitPrice).toBeNull();
+    });
+
+    it("should not store a price on an INBOUND", async () => {
+      const { registerMovement, product } = setup(10);
+      product.salePrice = 2500;
+
+      const result = await registerMovement.execute({
+        ...saleInput,
+        type: "INBOUND",
+        reason: undefined,
+      });
+
+      expect(result.movement?.unitPrice).toBeNull();
+    });
+  });
+
+  describe("undo", () => {
+    const adjustment = {
+      ...saleInput,
+      type: "ADJUSTMENT" as const,
+      reason: undefined,
+      quantity: 10,
+      idempotencyKey: "a1b2c3d4-0000-4000-8000-000000000002",
+    };
+
+    it("should link the adjustment to the movement it reverts", async () => {
+      const { registerMovement } = setup(10);
+      const sale = await registerMovement.execute(saleInput);
+
+      const result = await registerMovement.execute({
+        ...adjustment,
+        revertsMovementId: sale.movement?.id,
+      });
+
+      expect(result.movement?.revertsMovementId).toBe(sale.movement?.id);
+      expect(result.stock).toBe(10);
+    });
+
+    it("should only accept it on an ADJUSTMENT", async () => {
+      const { registerMovement } = setup(10);
+
+      await expect(
+        registerMovement.execute({ ...saleInput, revertsMovementId: "movement-1" }),
+      ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    });
+
+    it("should reject a movement of another product or business", async () => {
+      const { registerMovement } = setup(10);
+
+      await expect(
+        registerMovement.execute({ ...adjustment, revertsMovementId: "movement-99" }),
+      ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    });
+  });
+
   describe("execute", () => {
     it("should add the quantity and create the movement on INBOUND", async () => {
       const { registerMovement, product } = setup(10);
@@ -234,6 +315,8 @@ describe("RegisterMovement", () => {
           quantity: 4,
           resultingStock: 6,
           idempotencyKey: saleInput.idempotencyKey,
+          unitPrice: null,
+          revertsMovementId: null,
           createdAt: new Date(),
         },
       };

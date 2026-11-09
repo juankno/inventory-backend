@@ -13,6 +13,7 @@ export type ProductStock = {
   businessId: string;
   unit: Unit;
   stock: number;
+  salePrice?: number | null;
   isActive: boolean;
 };
 
@@ -26,7 +27,26 @@ export class MovementRepositoryMock implements MovementRepository {
     productId: string,
   ): Promise<StockedProduct | null> {
     const product = this.findProduct(businessId, productId);
-    return product ? { unit: product.unit, stock: product.stock } : null;
+    return product
+      ? {
+          unit: product.unit,
+          stock: product.stock,
+          salePrice: product.salePrice ?? null,
+        }
+      : null;
+  }
+
+  async belongsToProduct(
+    businessId: string,
+    productId: string,
+    movementId: string,
+  ): Promise<boolean> {
+    return this.stored.some(
+      (item) =>
+        item.businessId === businessId &&
+        item.movement.productId === productId &&
+        item.movement.id === movementId,
+    );
   }
 
   async findByIdempotencyKey(
