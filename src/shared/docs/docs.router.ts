@@ -7,6 +7,7 @@ const openapiPath = path.join(process.cwd(), "api/openapi.yaml");
 
 let openapi: string | undefined;
 
+// Versión exacta: una actualización de Scalar no cambia la página sin que lo decidamos.
 const scalarHtml = `<!doctype html>
 <html>
   <head>
@@ -16,7 +17,7 @@ const scalarHtml = `<!doctype html>
   </head>
   <body>
     <script id="api-reference" data-url="/api/v1/openapi.yaml"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.77.0"></script>
   </body>
 </html>`;
 
