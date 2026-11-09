@@ -439,15 +439,27 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           description: |
-            El código de barras ya está registrado en este negocio. Para abrir el producto
-            existente, la app lo busca por código (flujo de identificación).
+            El código de barras ya está registrado en este negocio:
+
+            - `CODE_ALREADY_REGISTERED`: es de un producto activo. Para abrirlo, la app lo busca
+              por código (flujo de identificación).
+            - `CODE_OF_DELETED_PRODUCT`: es de un producto eliminado. El código sigue ocupado,
+              porque el producto conserva su historial.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-              example:
-                code: CODE_ALREADY_REGISTERED
-                message: Ya existe un producto con este código en tu negocio.
+              examples:
+                alreadyRegistered:
+                  summary: Producto activo
+                  value:
+                    code: CODE_ALREADY_REGISTERED
+                    message: Ya existe un producto con este código en tu negocio.
+                deletedProduct:
+                  summary: Producto eliminado
+                  value:
+                    code: CODE_OF_DELETED_PRODUCT
+                    message: Este código es de un producto que eliminaste.
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -840,9 +852,9 @@ paths:
       tags: [Products]
       summary: Historial de movimientos de un producto (RF-15)
       description: |
-        Movimientos del producto del más reciente al más antiguo, de 50 en 50. Para pedir la
-        página siguiente, la app envía en `cursor` el `nextCursor` de la respuesta anterior;
-        cuando es `null`, no hay más.
+        Movimientos del producto del más reciente al más antiguo, de 50 en 50 si no llega `limit`.
+        Para pedir la página siguiente, la app envía en `cursor` el `nextCursor` de la respuesta
+        anterior; cuando es `null`, no hay más.
       operationId: getMovementHistory
       parameters:
         - $ref: "#/components/parameters/ProductId"
@@ -853,6 +865,14 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Cuántos movimientos devolver. Por defecto, 50.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         "200":
           description: Una página del historial.
@@ -876,7 +896,7 @@ paths:
                     createdAt: "2026-11-01T09:00:00.000Z"
                 nextCursor: null
         "400":
-          description: "`VALIDATION_ERROR`: el id o el cursor no son UUID."
+          description: "`VALIDATION_ERROR`: el id o el cursor no son UUID, o `limit` no está entre 1 y 100."
           content:
             application/json:
               schema:
@@ -1232,6 +1252,7 @@ components:
             - INVALID_GTIN
             - INVALID_QUANTITY
             - CODE_ALREADY_REGISTERED
+            - CODE_OF_DELETED_PRODUCT
             - CODE_NOT_RECOGNIZED
             - PRODUCT_NOT_FOUND
             - INVALID_UNIT_CHANGE

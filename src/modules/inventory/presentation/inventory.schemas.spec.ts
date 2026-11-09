@@ -57,6 +57,18 @@ describe("movementHistoryQuerySchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should read the limit from the query string as a number", () => {
+    const result = movementHistoryQuerySchema.parse({ limit: "5" });
+
+    expect(result.limit).toBe(5);
+  });
+
+  it.each(["0", "101", "2.5", "abc"])("should reject the limit %j", (limit) => {
+    const result = movementHistoryQuerySchema.safeParse({ limit });
+
+    expect(result.success).toBe(false);
+  });
+
   it("should reject a cursor that is not a UUID", () => {
     const result = movementHistoryQuerySchema.safeParse({ cursor: "50" });
 

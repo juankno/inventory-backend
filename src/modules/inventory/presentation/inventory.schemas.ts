@@ -10,4 +10,5 @@ export const listInventoryQuerySchema = z.strictObject({
 
 export const movementHistoryQuerySchema = z.strictObject({
   cursor: z.uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
 });
