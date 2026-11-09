@@ -138,6 +138,9 @@ paths:
         - El correo se compara sin espacios y sin distinguir mayúsculas.
         - Si el correo no existe o la contraseña no coincide, la respuesta es la misma
           (`INVALID_CREDENTIALS`), para no revelar qué correos están registrados.
+        - Después de 5 intentos fallidos seguidos, el correo queda bloqueado 15 minutos, tenga o
+          no una cuenta. Los intentos se olvidan al iniciar sesión, a los 15 minutos sin fallar o
+          al restablecer la contraseña.
       operationId: login
       security: []
       requestBody:
@@ -188,6 +191,15 @@ paths:
               example:
                 code: INVALID_CREDENTIALS
                 message: Correo o contraseña incorrectos.
+        "429":
+          description: Demasiados intentos fallidos con este correo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: TOO_MANY_LOGIN_ATTEMPTS
+                message: Demasiados intentos fallidos. Espera 15 minutos o restablece tu contraseña.
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1364,6 +1376,7 @@ components:
             - DATA_POLICY_NOT_ACCEPTED
             - EMAIL_ALREADY_REGISTERED
             - INVALID_CREDENTIALS
+            - TOO_MANY_LOGIN_ATTEMPTS
             - INVALID_RESET_CODE
             - EMAIL_NOT_SENT
             - UNAUTHORIZED

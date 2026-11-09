@@ -1,4 +1,4 @@
-export type ErrorStatus = 400 | 401 | 404 | 409 | 500;
+export type ErrorStatus = 400 | 401 | 404 | 409 | 429 | 500;
 
 export const errorCatalog = {
   INVALID_JSON: {
@@ -40,6 +40,11 @@ export const errorCatalog = {
   INVALID_CREDENTIALS: {
     status: 401,
     message: "Correo o contraseña incorrectos.",
+  },
+  TOO_MANY_LOGIN_ATTEMPTS: {
+    status: 429,
+    message:
+      "Demasiados intentos fallidos. Espera 15 minutos o restablece tu contraseña.",
   },
   INVALID_RESET_CODE: {
     status: 400,

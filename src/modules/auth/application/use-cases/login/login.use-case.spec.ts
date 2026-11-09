@@ -1,7 +1,13 @@
+import { LoginThrottleRepositoryMock } from "../../mocks/login-throttle.repository.mock.ts";
 import { PasswordHasherMock } from "../../mocks/password-hasher.mock.ts";
 import { TokenServiceMock } from "../../mocks/token-service.mock.ts";
 import { UserRepositoryMock } from "../../mocks/user.repository.mock.ts";
-import { Login, type LoginInput } from "./login.use-case.ts";
+import {
+  LOGIN_LOCK_MINUTES,
+  Login,
+  MAX_LOGIN_ATTEMPTS,
+  type LoginInput,
+} from "./login.use-case.ts";
 
 const validInput: LoginInput = {
   email: "rosa@correo.com",
@@ -17,15 +23,116 @@ async function setup() {
     passwordHash: "hashed:secreta123",
     dataPolicyAcceptedAt: new Date("2026-11-03T12:00:00Z"),
   });
+  const loginThrottle = new LoginThrottleRepositoryMock();
   const login = new Login(
     userRepository,
     new PasswordHasherMock(),
     new TokenServiceMock(),
+    loginThrottle,
   );
-  return { userRepository, login };
+  return { userRepository, loginThrottle, login };
 }
 
+const failLogin = (login: Login, email = validInput.email) =>
+  login.execute({ email, password: "equivocada" }).catch((error) => error);
+
+const LOCK_MS = LOGIN_LOCK_MINUTES * 60_000;
+
 describe("Login", () => {
+  describe("attempt limit", () => {
+    it("should lock the email after too many failed attempts, even with the right password", async () => {
+      const { login } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS; i++) await failLogin(login);
+
+      await expect(login.execute(validInput)).rejects.toMatchObject({
+        code: "TOO_MANY_LOGIN_ATTEMPTS",
+        status: 429,
+      });
+    });
+
+    it("should still answer INVALID_CREDENTIALS on the last attempt before locking", async () => {
+      const { login } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS - 1; i++) await failLogin(login);
+
+      expect(await failLogin(login)).toMatchObject({
+        code: "INVALID_CREDENTIALS",
+      });
+    });
+
+    it("should lock an email without an account in the same way", async () => {
+      const { login } = await setup();
+      const email = "nadie@correo.com";
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS; i++) await failLogin(login, email);
+
+      expect(await failLogin(login, email)).toMatchObject({
+        code: "TOO_MANY_LOGIN_ATTEMPTS",
+      });
+    });
+
+    it("should not lock other emails", async () => {
+      const { login } = await setup();
+      const email = "nadie@correo.com";
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS; i++) await failLogin(login, email);
+
+      await expect(login.execute(validInput)).resolves.toBeDefined();
+    });
+
+    it("should count the email in any format as the same one", async () => {
+      const { login } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS; i++) {
+        await failLogin(login, " ROSA@correo.com ");
+      }
+
+      await expect(login.execute(validInput)).rejects.toMatchObject({
+        code: "TOO_MANY_LOGIN_ATTEMPTS",
+      });
+    });
+
+    it("should forget the failed attempts after a successful login", async () => {
+      const { login, loginThrottle } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS - 1; i++) await failLogin(login);
+
+      await login.execute(validInput);
+
+      expect(loginThrottle.states.size).toBe(0);
+    });
+
+    it("should allow logging in once the lock has passed", async () => {
+      const { login, loginThrottle } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS; i++) await failLogin(login);
+      const state = loginThrottle.states.get(validInput.email)!;
+      state.lockedUntil = new Date(Date.now() - 1);
+
+      await expect(login.execute(validInput)).resolves.toBeDefined();
+      expect(loginThrottle.states.size).toBe(0);
+    });
+
+    it("should start counting again after the lock has passed", async () => {
+      const { login, loginThrottle } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS; i++) await failLogin(login);
+      loginThrottle.states.get(validInput.email)!.lockedUntil = new Date(
+        Date.now() - 1,
+      );
+
+      expect(await failLogin(login)).toMatchObject({
+        code: "INVALID_CREDENTIALS",
+      });
+      expect(loginThrottle.states.get(validInput.email)?.failedAttempts).toBe(1);
+    });
+
+    it("should forget old failed attempts", async () => {
+      const { login, loginThrottle } = await setup();
+      for (let i = 0; i < MAX_LOGIN_ATTEMPTS - 1; i++) await failLogin(login);
+      loginThrottle.states.get(validInput.email)!.lastFailedAt = new Date(
+        Date.now() - LOCK_MS - 1,
+      );
+
+      await failLogin(login);
+
+      expect(loginThrottle.states.get(validInput.email)?.failedAttempts).toBe(1);
+    });
+  });
+
   describe("execute", () => {
     it("should return the token, the user and the business", async () => {
       const { login } = await setup();

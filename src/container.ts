@@ -5,6 +5,7 @@ import { RegisterAccount } from "./modules/auth/application/use-cases/register-a
 import { RequestPasswordReset } from "./modules/auth/application/use-cases/request-password-reset/request-password-reset.use-case.ts";
 import { BcryptPasswordHasher } from "./modules/auth/infrastructure/bcrypt-password-hasher.ts";
 import { JwtTokenService } from "./modules/auth/infrastructure/jwt-token-service.ts";
+import { PrismaLoginThrottleRepository } from "./modules/auth/infrastructure/prisma-login-throttle.repository.ts";
 import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/prisma-password-reset.repository.ts";
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
@@ -33,6 +34,7 @@ export function buildDependencies(config: Config): AppDependencies {
 
   const userRepository = new PrismaUserRepository(prisma);
   const resetRepository = new PrismaPasswordResetRepository(prisma);
+  const loginThrottle = new PrismaLoginThrottleRepository(prisma);
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService(
     config.JWT_SECRET,
@@ -50,7 +52,12 @@ export function buildDependencies(config: Config): AppDependencies {
         passwordHasher,
         tokenService,
       ),
-      login: new Login(userRepository, passwordHasher, tokenService),
+      login: new Login(
+        userRepository,
+        passwordHasher,
+        tokenService,
+        loginThrottle,
+      ),
       requestPasswordReset: new RequestPasswordReset(
         userRepository,
         resetRepository,
@@ -62,6 +69,7 @@ export function buildDependencies(config: Config): AppDependencies {
         userRepository,
         resetRepository,
         passwordHasher,
+        loginThrottle,
       ),
     },
     products: {

@@ -1,3 +1,4 @@
+import { LoginThrottleRepositoryMock } from "../../mocks/login-throttle.repository.mock.ts";
 import { PasswordHasherMock } from "../../mocks/password-hasher.mock.ts";
 import { PasswordResetRepositoryMock } from "../../mocks/password-reset.repository.mock.ts";
 import { UserRepositoryMock } from "../../mocks/user.repository.mock.ts";
@@ -17,10 +18,12 @@ const validInput = {
 async function setup() {
   const userRepository = new UserRepositoryMock();
   const resetRepository = new PasswordResetRepositoryMock();
+  const loginThrottle = new LoginThrottleRepositoryMock();
   const confirmPasswordReset = new ConfirmPasswordReset(
     userRepository,
     resetRepository,
     new PasswordHasherMock(),
+    loginThrottle,
   );
   const account = await userRepository.createAccount({
     businessName: "Tienda Doña Rosa",
@@ -34,7 +37,7 @@ async function setup() {
     tokenHash: "hashed:123456",
     expiresAt: new Date(Date.now() + 15 * MINUTE),
   });
-  return { account, resetRepository, confirmPasswordReset };
+  return { account, resetRepository, loginThrottle, confirmPasswordReset };
 }
 
 describe("ConfirmPasswordReset", () => {
@@ -48,6 +51,26 @@ describe("ConfirmPasswordReset", () => {
         "hashed:nuevaClave99",
       );
       expect(resetRepository.tokens[0]?.usedAt).not.toBeNull();
+    });
+
+    it("should lift the login lock after changing the password", async () => {
+      const { confirmPasswordReset, loginThrottle } = await setup();
+      await loginThrottle.registerFailure("rosa@correo.com", new Date());
+
+      await confirmPasswordReset.execute(validInput);
+
+      expect(loginThrottle.states.size).toBe(0);
+    });
+
+    it("should keep the login lock when the code is wrong", async () => {
+      const { confirmPasswordReset, loginThrottle } = await setup();
+      await loginThrottle.registerFailure("rosa@correo.com", new Date());
+
+      await confirmPasswordReset
+        .execute({ ...validInput, code: "000000" })
+        .catch(() => undefined);
+
+      expect(loginThrottle.states.size).toBe(1);
     });
 
     it("should accept the email with spaces and capital letters", async () => {

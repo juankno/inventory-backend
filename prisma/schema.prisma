@@ -105,6 +105,18 @@ model Movement {
   @@map("movements")
 }
 
+// Intentos fallidos de inicio de sesión. Va en la base de datos porque en Vercel
+// cada petición puede caer en una instancia distinta. Se guarda el hash del correo
+// para no conservar correos de quienes no tienen cuenta.
+model LoginThrottle {
+  emailHash      String    @id @map("email_hash") @db.Char(64)
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lastFailedAt   DateTime  @map("last_failed_at")
+  lockedUntil    DateTime? @map("locked_until")
+
+  @@map("login_throttles")
+}
+
 model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @map("user_id") @db.Uuid
