@@ -20,6 +20,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: Reports
+    description: Resumen de ventas y reportes en Excel
   - name: Health
     description: Estado del servicio
   - name: Auth
@@ -1015,6 +1017,110 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /reports/summary:
+    get:
+      tags: [Reports]
+      summary: Resumen de ventas de hoy y de la semana
+      description: |
+        Total vendido hoy y en la semana, que empieza el lunes, en hora de Colombia, y los 5
+        productos más vendidos de la semana.
+
+        - El total usa el precio guardado en cada venta. Las ventas sin precio no suman y se
+          cuentan aparte en `salesWithoutPrice`.
+        - Las ventas deshechas no cuentan.
+      operationId: getSalesSummary
+      responses:
+        "200":
+          description: El resumen.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [today, week, topProducts, salesWithoutPrice]
+                properties:
+                  today:
+                    $ref: "#/components/schemas/PeriodSales"
+                  week:
+                    $ref: "#/components/schemas/PeriodSales"
+                  topProducts:
+                    type: array
+                    items:
+                      type: object
+                      required: [name, unit, quantity, total]
+                      properties:
+                        name:
+                          type: string
+                        unit:
+                          type: string
+                          enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]
+                        quantity:
+                          type: number
+                        total:
+                          type: number
+                  salesWithoutPrice:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /reports/inventory:
+    get:
+      tags: [Reports]
+      summary: Reporte de inventario actual, en Excel
+      description: Productos activos con existencias, mínimo, precio, valor a precio de venta y estado.
+      operationId: getInventoryReport
+      responses:
+        "200":
+          $ref: "#/components/responses/ExcelReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /reports/movements:
+    get:
+      tags: [Reports]
+      summary: Reporte de movimientos de un período, en Excel
+      description: |
+        Todos los movimientos del período, también de productos eliminados. La cantidad lleva su
+        signo y los movimientos deshechos quedan marcados.
+      operationId: getMovementsReport
+      parameters:
+        - $ref: "#/components/parameters/ReportFrom"
+        - $ref: "#/components/parameters/ReportTo"
+      responses:
+        "200":
+          $ref: "#/components/responses/ExcelReport"
+        "400":
+          $ref: "#/components/responses/InvalidReportPeriod"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /reports/sales:
+    get:
+      tags: [Reports]
+      summary: Reporte de ventas de un período, en Excel
+      description: |
+        Una hoja con el total por producto y otra con cada venta. Solo cuenta salidas por venta que
+        no se deshicieron, con el precio que tenía el producto al venderse. Las ventas sin precio
+        no suman y se cuentan aparte.
+      operationId: getSalesReport
+      parameters:
+        - $ref: "#/components/parameters/ReportFrom"
+        - $ref: "#/components/parameters/ReportTo"
+      responses:
+        "200":
+          $ref: "#/components/responses/ExcelReport"
+        "400":
+          $ref: "#/components/responses/InvalidReportPeriod"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1029,6 +1135,22 @@ components:
         si el token falta, es inválido o venció.
 
   parameters:
+    ReportFrom:
+      name: from
+      in: query
+      required: true
+      description: Primer día del período (`AAAA-MM-DD`), en hora de Colombia.
+      schema:
+        type: string
+        format: date
+    ReportTo:
+      name: to
+      in: query
+      required: true
+      description: Último día del período, incluido. El período no puede pasar de 366 días.
+      schema:
+        type: string
+        format: date
     ProductId:
       name: id
       in: path
@@ -1038,6 +1160,17 @@ components:
         format: uuid
 
   schemas:
+    PeriodSales:
+      type: object
+      required: [total, sales]
+      properties:
+        total:
+          type: number
+          description: Valor vendido, con el precio guardado en cada venta.
+        sales:
+          type: integer
+          description: Número de ventas.
+
     DeletedProduct:
       type: object
       required: [id, name, unit, stock, salePrice, minStock, codeType, code, deletedAt]
@@ -1385,6 +1518,7 @@ components:
             - INVALID_QUANTITY
             - CODE_ALREADY_REGISTERED
             - CODE_OF_DELETED_PRODUCT
+            - REPORT_TOO_LARGE
             - CODE_NOT_RECOGNIZED
             - PRODUCT_NOT_FOUND
             - INVALID_UNIT_CHANGE
@@ -1408,6 +1542,25 @@ components:
         message: La petición no tiene un formato válido.
 
   responses:
+    ExcelReport:
+      description: El archivo de Excel.
+      content:
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+          schema:
+            type: string
+            format: binary
+    InvalidReportPeriod:
+      description: |
+        - `VALIDATION_ERROR`: faltan las fechas, no son válidas, `to` es anterior a `from` o el
+          período pasa de 366 días.
+        - `REPORT_TOO_LARGE`: hay demasiados datos. Hay que elegir un período más corto.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: REPORT_TOO_LARGE
+            message: Este reporte tiene demasiados datos. Elige un período más corto.
     ProductNotFound:
       description: "`PRODUCT_NOT_FOUND`: el producto no existe, fue dado de baja o pertenece a otro negocio."
       content:

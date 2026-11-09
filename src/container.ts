@@ -25,6 +25,14 @@ import { RestoreProduct } from "./modules/products/application/use-cases/restore
 import { UpdateProduct } from "./modules/products/application/use-cases/update-product/update-product.use-case.ts";
 import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
 import { PrismaProductRepository } from "./modules/products/infrastructure/prisma-product.repository.ts";
+import {
+  GenerateInventoryReport,
+  GenerateMovementsReport,
+  GenerateSalesReport,
+} from "./modules/reports/application/use-cases/generate-reports.use-case.ts";
+import { GetSalesSummary } from "./modules/reports/application/use-cases/get-sales-summary.use-case.ts";
+import { ExcelReportRenderer } from "./modules/reports/infrastructure/excel-report-renderer.ts";
+import { PrismaReportQueries } from "./modules/reports/infrastructure/prisma-report-queries.repository.ts";
 import { createEmailSender } from "./shared/email/create-email-sender.ts";
 import type { Config } from "./shared/infrastructure/config.ts";
 import { createPrismaClient } from "./shared/infrastructure/prisma.ts";
@@ -43,6 +51,8 @@ export function buildDependencies(config: Config): AppDependencies {
   const emailSender = createEmailSender(config);
   const productRepository = new PrismaProductRepository(prisma);
   const inventoryQueries = new PrismaInventoryQueries(prisma);
+  const reportQueries = new PrismaReportQueries(prisma);
+  const reportRenderer = new ExcelReportRenderer();
 
   return {
     requireAuth: requireAuthMiddleware(tokenService),
@@ -93,6 +103,18 @@ export function buildDependencies(config: Config): AppDependencies {
       getMovementHistory: new GetMovementHistory(inventoryQueries),
       getLowStockAlerts: new GetLowStockAlerts(inventoryQueries),
       listDeletedProducts: new ListDeletedProducts(inventoryQueries),
+    },
+    reports: {
+      generateInventoryReport: new GenerateInventoryReport(
+        reportQueries,
+        reportRenderer,
+      ),
+      generateMovementsReport: new GenerateMovementsReport(
+        reportQueries,
+        reportRenderer,
+      ),
+      generateSalesReport: new GenerateSalesReport(reportQueries, reportRenderer),
+      getSalesSummary: new GetSalesSummary(reportQueries),
     },
   };
 }
