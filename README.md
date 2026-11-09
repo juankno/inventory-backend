@@ -45,6 +45,12 @@ Valores SMTP de algunos proveedores:
 
 **Agregar un proveedor sin SMTP:** crea un adaptador de `EmailSender` en `src/shared/email/`, súmalo a `EMAIL_PROVIDERS` en [config.ts](src/shared/infrastructure/config.ts) con sus variables y agrégalo en `createEmailSender`.
 
+## Eliminar productos
+
+Eliminar un producto no borra nada: se marca con `is_active = false` y la fecha en `deleted_at`. Conserva su existencia, su historial y su código, y se puede restaurar con `POST /products/:id/restore`.
+
+Por ahora ningún proceso borra datos. Si más adelante se limpia con un cron, debe usar `deleted_at` para respetar un tiempo de retención, y tener en cuenta que `movements` referencia a `products`.
+
 ## Scripts
 
 | Script | Qué hace |

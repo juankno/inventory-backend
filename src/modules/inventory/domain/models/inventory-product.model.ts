@@ -12,6 +12,10 @@ export interface InventoryProduct {
   code: string;
 }
 
+export interface DeletedProduct extends InventoryProduct {
+  deletedAt: Date;
+}
+
 export interface InventoryProductWithStatus extends InventoryProduct {
   status: StockStatus;
 }

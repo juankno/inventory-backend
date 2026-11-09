@@ -21,4 +21,6 @@ export interface ProductRepository {
     changes: ProductChanges,
   ): Promise<Product | null>;
   deactivate(businessId: string, productId: string): Promise<boolean>;
+  /** Devuelve el producto activo después de restaurarlo, o null si no existe. */
+  restore(businessId: string, productId: string): Promise<Product | null>;
 }

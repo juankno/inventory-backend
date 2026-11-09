@@ -1,5 +1,6 @@
 import { AppError } from "../../../../../shared/errors/app-error.ts";
 import { normalizeEmail } from "../../../domain/rules/email.ts";
+import type { LoginThrottleRepository } from "../../ports/login-throttle.repository.ts";
 import type { PasswordHasher } from "../../ports/password-hasher.port.ts";
 import type { PasswordResetRepository } from "../../ports/password-reset.repository.ts";
 import type { UserRepository } from "../../ports/user.repository.ts";
@@ -17,6 +18,7 @@ export class ConfirmPasswordReset {
     private readonly userRepository: UserRepository,
     private readonly resetRepository: PasswordResetRepository,
     private readonly passwordHasher: PasswordHasher,
+    private readonly loginThrottle: LoginThrottleRepository,
   ) {}
 
   async execute(data: ConfirmPasswordResetInput): Promise<void> {
@@ -47,6 +49,8 @@ export class ConfirmPasswordReset {
       account.user.id,
       await this.passwordHasher.hash(data.newPassword),
     );
+    // Quien recuperó su cuenta no debe esperar a que venza el bloqueo de inicio de sesión.
+    await this.loginThrottle.clear(email);
     if (!isConsumed) throw new AppError("INVALID_RESET_CODE");
   }
 }

@@ -73,6 +73,9 @@ model Product {
   codeType   CodeType @map("code_type")
   code       String   @db.VarChar(32)
   isActive   Boolean  @default(true) @map("is_active")
+  // Cuándo se eliminó. Eliminar es reversible: la limpieza definitiva, si se hace,
+  // debe usar esta fecha para respetar un tiempo de retención.
+  deletedAt  DateTime? @map("deleted_at")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -100,6 +103,18 @@ model Movement {
 
   @@index([productId, createdAt(sort: Desc)])
   @@map("movements")
+}
+
+// Intentos fallidos de inicio de sesión. Va en la base de datos porque en Vercel
+// cada petición puede caer en una instancia distinta. Se guarda el hash del correo
+// para no conservar correos de quienes no tienen cuenta.
+model LoginThrottle {
+  emailHash      String    @id @map("email_hash") @db.Char(64)
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lastFailedAt   DateTime  @map("last_failed_at")
+  lockedUntil    DateTime? @map("locked_until")
+
+  @@map("login_throttles")
 }
 
 model PasswordResetToken {

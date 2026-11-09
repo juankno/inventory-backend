@@ -5,6 +5,7 @@ import { RegisterAccount } from "./modules/auth/application/use-cases/register-a
 import { RequestPasswordReset } from "./modules/auth/application/use-cases/request-password-reset/request-password-reset.use-case.ts";
 import { BcryptPasswordHasher } from "./modules/auth/infrastructure/bcrypt-password-hasher.ts";
 import { JwtTokenService } from "./modules/auth/infrastructure/jwt-token-service.ts";
+import { PrismaLoginThrottleRepository } from "./modules/auth/infrastructure/prisma-login-throttle.repository.ts";
 import { PrismaPasswordResetRepository } from "./modules/auth/infrastructure/prisma-password-reset.repository.ts";
 import { PrismaUserRepository } from "./modules/auth/infrastructure/prisma-user.repository.ts";
 import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-reset-code-generator.ts";
@@ -12,6 +13,7 @@ import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.
 import { GetLowStockAlerts } from "./modules/inventory/application/use-cases/get-low-stock-alerts/get-low-stock-alerts.use-case.ts";
 import { GetMovementHistory } from "./modules/inventory/application/use-cases/get-movement-history/get-movement-history.use-case.ts";
 import { GetProduct } from "./modules/inventory/application/use-cases/get-product/get-product.use-case.ts";
+import { ListDeletedProducts } from "./modules/inventory/application/use-cases/list-deleted-products/list-deleted-products.use-case.ts";
 import { ListInventory } from "./modules/inventory/application/use-cases/list-inventory/list-inventory.use-case.ts";
 import { PrismaInventoryQueries } from "./modules/inventory/infrastructure/prisma-inventory-queries.repository.ts";
 import { RegisterMovement } from "./modules/movements/application/use-cases/register-movement/register-movement.use-case.ts";
@@ -19,6 +21,7 @@ import { PrismaMovementRepository } from "./modules/movements/infrastructure/pri
 import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
 import { DeactivateProduct } from "./modules/products/application/use-cases/deactivate-product/deactivate-product.use-case.ts";
 import { IdentifyProduct } from "./modules/products/application/use-cases/identify-product/identify-product.use-case.ts";
+import { RestoreProduct } from "./modules/products/application/use-cases/restore-product/restore-product.use-case.ts";
 import { UpdateProduct } from "./modules/products/application/use-cases/update-product/update-product.use-case.ts";
 import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
 import { PrismaProductRepository } from "./modules/products/infrastructure/prisma-product.repository.ts";
@@ -31,6 +34,7 @@ export function buildDependencies(config: Config): AppDependencies {
 
   const userRepository = new PrismaUserRepository(prisma);
   const resetRepository = new PrismaPasswordResetRepository(prisma);
+  const loginThrottle = new PrismaLoginThrottleRepository(prisma);
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService(
     config.JWT_SECRET,
@@ -48,7 +52,12 @@ export function buildDependencies(config: Config): AppDependencies {
         passwordHasher,
         tokenService,
       ),
-      login: new Login(userRepository, passwordHasher, tokenService),
+      login: new Login(
+        userRepository,
+        passwordHasher,
+        tokenService,
+        loginThrottle,
+      ),
       requestPasswordReset: new RequestPasswordReset(
         userRepository,
         resetRepository,
@@ -60,6 +69,7 @@ export function buildDependencies(config: Config): AppDependencies {
         userRepository,
         resetRepository,
         passwordHasher,
+        loginThrottle,
       ),
     },
     products: {
@@ -70,6 +80,7 @@ export function buildDependencies(config: Config): AppDependencies {
       identifyProduct: new IdentifyProduct(productRepository),
       updateProduct: new UpdateProduct(productRepository),
       deactivateProduct: new DeactivateProduct(productRepository),
+      restoreProduct: new RestoreProduct(productRepository),
     },
     movements: {
       registerMovement: new RegisterMovement(
@@ -81,6 +92,7 @@ export function buildDependencies(config: Config): AppDependencies {
       getProduct: new GetProduct(inventoryQueries),
       getMovementHistory: new GetMovementHistory(inventoryQueries),
       getLowStockAlerts: new GetLowStockAlerts(inventoryQueries),
+      listDeletedProducts: new ListDeletedProducts(inventoryQueries),
     },
   };
 }

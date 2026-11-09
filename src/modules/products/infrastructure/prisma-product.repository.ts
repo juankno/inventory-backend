@@ -149,9 +149,17 @@ export class PrismaProductRepository implements ProductRepository {
   async deactivate(businessId: string, productId: string): Promise<boolean> {
     const { count } = await this.prisma.product.updateMany({
       where: { id: productId, businessId, isActive: true },
-      data: { isActive: false },
+      data: { isActive: false, deletedAt: new Date() },
     });
     return count === 1;
+  }
+
+  async restore(businessId: string, productId: string): Promise<Product | null> {
+    await this.prisma.product.updateMany({
+      where: { id: productId, businessId, isActive: false },
+      data: { isActive: true, deletedAt: null },
+    });
+    return this.findActiveById(businessId, productId);
   }
 }
 
