@@ -96,10 +96,18 @@ model Movement {
   quantity       Decimal         @db.Decimal(12, 2)
   resultingStock Decimal         @map("resulting_stock") @db.Decimal(12, 2)
   idempotencyKey String          @unique @map("idempotency_key") @db.Uuid
+  // Precio de venta del producto al registrar una salida: los reportes no cambian
+  // si después sube el precio. Las salidas anteriores a esta columna no lo tienen.
+  unitPrice      Decimal?        @map("unit_price") @db.Decimal(12, 2)
+  // Con "Deshacer", el ajuste apunta al movimiento que revierte: una venta deshecha
+  // no cuenta en los reportes. Cada movimiento se puede revertir una sola vez.
+  revertsMovementId String?      @unique @map("reverts_movement_id") @db.Uuid
   createdAt      DateTime        @default(now()) @map("created_at")
 
   product Product @relation(fields: [productId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
+  reverts    Movement? @relation("MovementReversal", fields: [revertsMovementId], references: [id])
+  revertedBy Movement? @relation("MovementReversal")
 
   @@index([productId, createdAt(sort: Desc)])
   @@map("movements")

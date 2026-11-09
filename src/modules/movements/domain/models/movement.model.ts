@@ -11,5 +11,7 @@ export interface Movement {
   quantity: number;
   resultingStock: number;
   idempotencyKey: string;
+  unitPrice: number | null;
+  revertsMovementId: string | null;
   createdAt: Date;
 }

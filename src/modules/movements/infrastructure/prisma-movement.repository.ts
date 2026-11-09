@@ -17,6 +17,8 @@ const movementSelect = {
   quantity: true,
   resultingStock: true,
   idempotencyKey: true,
+  unitPrice: true,
+  revertsMovementId: true,
   createdAt: true,
 } satisfies Prisma.MovementSelect;
 
@@ -32,6 +34,8 @@ const toMovement = (row: MovementRow): Movement => {
     quantity: row.quantity.toNumber(),
     resultingStock: row.resultingStock.toNumber(),
     idempotencyKey: row.idempotencyKey,
+    unitPrice: row.unitPrice?.toNumber() ?? null,
+    revertsMovementId: row.revertsMovementId,
     createdAt: row.createdAt,
   };
 };
@@ -45,9 +49,27 @@ export class PrismaMovementRepository implements MovementRepository {
   ): Promise<StockedProduct | null> {
     const row = await this.prisma.product.findFirst({
       where: { id: productId, businessId, isActive: true },
-      select: { unit: true, stock: true },
+      select: { unit: true, stock: true, salePrice: true },
     });
-    return row ? { unit: row.unit, stock: row.stock.toNumber() } : null;
+    return row
+      ? {
+          unit: row.unit,
+          stock: row.stock.toNumber(),
+          salePrice: row.salePrice?.toNumber() ?? null,
+        }
+      : null;
+  }
+
+  async belongsToProduct(
+    businessId: string,
+    productId: string,
+    movementId: string,
+  ): Promise<boolean> {
+    const row = await this.prisma.movement.findFirst({
+      where: { id: movementId, productId, product: { businessId } },
+      select: { id: true },
+    });
+    return row !== null;
   }
 
   async findByIdempotencyKey(
