@@ -58,6 +58,10 @@ export function createApp(deps: AppDependencies) {
   api.use(docsRouter());
 
   app.use("/api/v1", api);
+  // La URL corta lleva a la documentación, que vive con la versión de la API.
+  app.get("/", (_req, res) => {
+    res.redirect("/api/v1/docs");
+  });
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
