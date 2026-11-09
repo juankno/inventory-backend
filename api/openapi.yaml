@@ -20,8 +20,6 @@ servers:
 security:
   - bearerAuth: []
 tags:
-  - name: Reports
-    description: Resumen de ventas y reportes en Excel
   - name: Health
     description: Estado del servicio
   - name: Auth
@@ -30,6 +28,8 @@ tags:
     description: Productos del inventario del negocio
   - name: Movements
     description: Entradas, salidas y ajustes de existencias
+  - name: Reports
+    description: Resumen de ventas y reportes en Excel
 
 paths:
   /health:
