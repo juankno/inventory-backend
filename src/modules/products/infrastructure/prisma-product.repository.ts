@@ -78,7 +78,18 @@ export class PrismaProductRepository implements ProductRepository {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new AppError("CODE_ALREADY_REGISTERED");
+        // El código sigue ocupado aunque el producto esté eliminado (RF-08).
+        const existing = await this.prisma.product.findUnique({
+          where: {
+            businessId_code: { businessId: data.businessId, code: data.code },
+          },
+          select: { isActive: true },
+        });
+        throw new AppError(
+          existing?.isActive === false
+            ? "CODE_OF_DELETED_PRODUCT"
+            : "CODE_ALREADY_REGISTERED",
+        );
       }
       throw error;
     }

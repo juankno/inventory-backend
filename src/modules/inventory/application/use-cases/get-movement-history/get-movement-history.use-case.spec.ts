@@ -41,6 +41,19 @@ function setup(movementCount: number, product: Partial<StoredProduct> = {}) {
 
 describe("GetMovementHistory", () => {
   describe("execute", () => {
+    it("should respect the requested limit", async () => {
+      const { getMovementHistory } = setup(8);
+
+      const page = await getMovementHistory.execute({
+        businessId: "business-1",
+        productId: PRODUCT_ID,
+        limit: 5,
+      });
+
+      expect(page.items).toHaveLength(5);
+      expect(page.nextCursor).toBe(page.items[4]?.id);
+    });
+
     it("should list the movements from the most recent to the oldest", async () => {
       const { getMovementHistory } = setup(3);
 

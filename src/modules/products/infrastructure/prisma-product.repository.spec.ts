@@ -150,9 +150,20 @@ describe("PrismaProductRepository", () => {
       expect(product.minStock).toBeNull();
     });
 
-    it("should reject with CODE_ALREADY_REGISTERED when the code exists in the business", async () => {
-      const { create, repository } = setup();
+    it("should reject with CODE_OF_DELETED_PRODUCT when the code belongs to a deleted product", async () => {
+      const { create, findUnique, repository } = setup();
       create.mockRejectedValue(uniqueViolation());
+      findUnique.mockResolvedValue({ isActive: false });
+
+      await expect(repository.create(productData)).rejects.toMatchObject({
+        code: "CODE_OF_DELETED_PRODUCT",
+      });
+    });
+
+    it("should reject with CODE_ALREADY_REGISTERED when the code exists in the business", async () => {
+      const { create, findUnique, repository } = setup();
+      create.mockRejectedValue(uniqueViolation());
+      findUnique.mockResolvedValue({ isActive: true });
 
       const creation = repository.create(productData);
 

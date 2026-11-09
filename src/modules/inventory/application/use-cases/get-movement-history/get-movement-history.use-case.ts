@@ -10,6 +10,7 @@ export interface GetMovementHistoryInput {
   businessId: string;
   productId: string;
   cursor?: string;
+  limit?: number;
 }
 
 export class GetMovementHistory {
@@ -23,7 +24,7 @@ export class GetMovementHistory {
     if (!product) throw new AppError("PRODUCT_NOT_FOUND");
 
     return this.inventoryQueries.listMovements(data.businessId, data.productId, {
-      limit: HISTORY_PAGE_SIZE,
+      limit: data.limit ?? HISTORY_PAGE_SIZE,
       cursor: data.cursor,
     });
   }

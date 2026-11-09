@@ -32,6 +32,10 @@ export const errorCatalog = {
     status: 409,
     message: "Ya existe un producto con este código en tu negocio.",
   },
+  CODE_OF_DELETED_PRODUCT: {
+    status: 409,
+    message: "Este código es de un producto que eliminaste.",
+  },
   INVALID_CREDENTIALS: {
     status: 401,
     message: "Correo o contraseña incorrectos.",

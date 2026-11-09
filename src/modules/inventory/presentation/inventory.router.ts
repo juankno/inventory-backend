@@ -45,11 +45,18 @@ export const inventoryRouter = ({
 
   router.get("/:id/movements", async (req, res) => {
     const { id } = validate(productIdParamsSchema, req.params);
-    const { cursor } = validate(movementHistoryQuerySchema, req.query);
+    const { cursor, limit } = validate(movementHistoryQuerySchema, req.query);
     const { businessId } = res.locals.auth;
     res
       .status(200)
-      .json(await getMovementHistory.execute({ businessId, productId: id, cursor }));
+      .json(
+        await getMovementHistory.execute({
+          businessId,
+          productId: id,
+          cursor,
+          limit,
+        }),
+      );
   });
 
   return router;

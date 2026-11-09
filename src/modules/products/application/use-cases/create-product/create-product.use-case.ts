@@ -88,4 +88,6 @@ export class CreateProduct {
 }
 
 const isCodeAlreadyRegistered = (error: unknown): boolean =>
-  error instanceof AppError && error.code === "CODE_ALREADY_REGISTERED";
+  error instanceof AppError &&
+  (error.code === "CODE_ALREADY_REGISTERED" ||
+    error.code === "CODE_OF_DELETED_PRODUCT");
