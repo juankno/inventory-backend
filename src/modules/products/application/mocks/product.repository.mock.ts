@@ -97,5 +97,15 @@ export class ProductRepositoryMock implements ProductRepository {
     product.isActive = false;
     return true;
   }
+
+  async restore(businessId: string, productId: string): Promise<Product | null> {
+    const product = this.products.find(
+      (item) => item.id === productId && item.businessId === businessId,
+    );
+    if (!product) return null;
+
+    product.isActive = true;
+    return product;
+  }
 }
 

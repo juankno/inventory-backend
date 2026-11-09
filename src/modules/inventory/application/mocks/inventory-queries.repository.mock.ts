@@ -1,5 +1,8 @@
 import type { HistoryMovement } from "../../domain/models/history-movement.model.ts";
-import type { InventoryProduct } from "../../domain/models/inventory-product.model.ts";
+import type {
+  DeletedProduct,
+  InventoryProduct,
+} from "../../domain/models/inventory-product.model.ts";
 import type {
   InventoryQueries,
   MovementPage,
@@ -9,6 +12,7 @@ import type {
 export type StoredProduct = InventoryProduct & {
   businessId: string;
   isActive: boolean;
+  deletedAt?: Date;
 };
 
 export type StoredHistoryMovement = HistoryMovement & { productId: string };
@@ -31,6 +35,24 @@ export class InventoryQueriesMock implements InventoryQueries {
       )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(toInventoryProduct);
+  }
+
+  async listDeletedProducts(
+    businessId: string,
+    code?: string,
+  ): Promise<DeletedProduct[]> {
+    return this.products
+      .filter(
+        (product) =>
+          product.businessId === businessId &&
+          !product.isActive &&
+          (!code || product.code === code),
+      )
+      .map((product) => ({
+        ...toInventoryProduct(product),
+        deletedAt: product.deletedAt ?? new Date(0),
+      }))
+      .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
   }
 
   async findActiveProduct(

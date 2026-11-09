@@ -459,7 +459,7 @@ paths:
                   summary: Producto eliminado
                   value:
                     code: CODE_OF_DELETED_PRODUCT
-                    message: Este código es de un producto que eliminaste.
+                    message: Este código es de un producto que eliminaste. Puedes restaurarlo desde Productos eliminados.
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -682,6 +682,98 @@ paths:
                   value:
                     code: IDEMPOTENCY_KEY_CONFLICT
                     message: No pudimos registrar el movimiento. Intenta de nuevo.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /products/deleted:
+    get:
+      tags: [Products]
+      summary: Productos eliminados del negocio (RF-08)
+      description: |
+        Productos que se pueden restaurar, del eliminado más reciente al más antiguo. Con `code`,
+        solo el producto eliminado con ese código, para ofrecer restaurarlo al escanearlo.
+      operationId: listDeletedProducts
+      parameters:
+        - name: code
+          in: query
+          required: false
+          description: Código de barras o identificador interno exacto.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 32
+      responses:
+        "200":
+          description: Lista de productos eliminados; vacía si no hay.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeletedProduct"
+              example:
+                - id: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                  name: Panela
+                  unit: UNIT
+                  stock: 4
+                  salePrice: 3000
+                  minStock: 2
+                  codeType: INTERNAL
+                  code: INV-7KQ2M9XA4T
+                  deletedAt: "2026-11-08T15:30:00.000Z"
+        "400":
+          description: "`VALIDATION_ERROR`: el código está vacío o tiene más de 32 caracteres."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /products/{id}/restore:
+    post:
+      tags: [Products]
+      summary: Restaura un producto eliminado (RF-08)
+      description: |
+        Devuelve el producto al inventario con la existencia y el historial que tenía. Si ya está
+        activo, responde igual, así un reintento no falla.
+      operationId: restoreProduct
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: El producto, ya activo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+              example:
+                id: 3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f708192
+                name: Panela
+                unit: UNIT
+                stock: 4
+                salePrice: 3000
+                minStock: 2
+                codeType: INTERNAL
+                code: INV-7KQ2M9XA4T
+        "400":
+          description: "`VALIDATION_ERROR`: el id no es un UUID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProductNotFound"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -934,6 +1026,33 @@ components:
         format: uuid
 
   schemas:
+    DeletedProduct:
+      type: object
+      required: [id, name, unit, stock, salePrice, minStock, codeType, code, deletedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string
+          enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]
+        stock:
+          type: number
+        salePrice:
+          type: [number, "null"]
+        minStock:
+          type: [number, "null"]
+        codeType:
+          type: string
+          enum: [GTIN, INTERNAL]
+        code:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+
     RegisterRequest:
       type: object
       additionalProperties: false

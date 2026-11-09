@@ -34,7 +34,8 @@ export const errorCatalog = {
   },
   CODE_OF_DELETED_PRODUCT: {
     status: 409,
-    message: "Este código es de un producto que eliminaste.",
+    message:
+      "Este código es de un producto que eliminaste. Puedes restaurarlo desde Productos eliminados.",
   },
   INVALID_CREDENTIALS: {
     status: 401,

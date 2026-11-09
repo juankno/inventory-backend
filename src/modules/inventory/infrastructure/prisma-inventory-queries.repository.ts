@@ -5,7 +5,10 @@ import type {
   PageRequest,
 } from "../application/ports/inventory-queries.repository.ts";
 import type { HistoryMovement } from "../domain/models/history-movement.model.ts";
-import type { InventoryProduct } from "../domain/models/inventory-product.model.ts";
+import type {
+  DeletedProduct,
+  InventoryProduct,
+} from "../domain/models/inventory-product.model.ts";
 
 const productSelect = {
   id: true,
@@ -67,6 +70,22 @@ export class PrismaInventoryQueries implements InventoryQueries {
       select: productSelect,
     });
     return rows.map(toInventoryProduct);
+  }
+
+  async listDeletedProducts(
+    businessId: string,
+    code?: string,
+  ): Promise<DeletedProduct[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { businessId, isActive: false, ...(code && { code }) },
+      orderBy: { deletedAt: "desc" },
+      select: { ...productSelect, deletedAt: true },
+    });
+    return rows.map((row) => ({
+      ...toInventoryProduct(row),
+      // Una restricción CHECK garantiza la fecha en los productos inactivos.
+      deletedAt: row.deletedAt!,
+    }));
   }
 
   async findActiveProduct(

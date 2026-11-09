@@ -73,6 +73,9 @@ model Product {
   codeType   CodeType @map("code_type")
   code       String   @db.VarChar(32)
   isActive   Boolean  @default(true) @map("is_active")
+  // Cuándo se eliminó. Eliminar es reversible: la limpieza definitiva, si se hace,
+  // debe usar esta fecha para respetar un tiempo de retención.
+  deletedAt  DateTime? @map("deleted_at")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

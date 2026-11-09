@@ -310,7 +310,7 @@ describe("PrismaProductRepository", () => {
       expect(isDeactivated).toBe(true);
       expect(updateMany).toHaveBeenCalledWith({
         where: { id: "product-1", businessId: "business-1", isActive: true },
-        data: { isActive: false },
+        data: { isActive: false, deletedAt: expect.any(Date) },
       });
     });
 
@@ -321,6 +321,30 @@ describe("PrismaProductRepository", () => {
       const isDeactivated = await repository.deactivate("business-2", "product-1");
 
       expect(isDeactivated).toBe(false);
+    });
+  });
+
+  describe("restore", () => {
+    it("should reactivate only an inactive product of the business and return it", async () => {
+      const { updateMany, findFirst, repository } = setup();
+      updateMany.mockResolvedValue({ count: 1 });
+      findFirst.mockResolvedValue(createdRow);
+
+      const product = await repository.restore("business-1", "product-1");
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: "product-1", businessId: "business-1", isActive: false },
+        data: { isActive: true, deletedAt: null },
+      });
+      expect(product?.id).toBe("product-1");
+    });
+
+    it("should return null when the product does not exist in the business", async () => {
+      const { updateMany, findFirst, repository } = setup();
+      updateMany.mockResolvedValue({ count: 0 });
+      findFirst.mockResolvedValue(null);
+
+      expect(await repository.restore("business-2", "product-1")).toBeNull();
     });
   });
 });

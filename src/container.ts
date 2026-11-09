@@ -12,6 +12,7 @@ import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.
 import { GetLowStockAlerts } from "./modules/inventory/application/use-cases/get-low-stock-alerts/get-low-stock-alerts.use-case.ts";
 import { GetMovementHistory } from "./modules/inventory/application/use-cases/get-movement-history/get-movement-history.use-case.ts";
 import { GetProduct } from "./modules/inventory/application/use-cases/get-product/get-product.use-case.ts";
+import { ListDeletedProducts } from "./modules/inventory/application/use-cases/list-deleted-products/list-deleted-products.use-case.ts";
 import { ListInventory } from "./modules/inventory/application/use-cases/list-inventory/list-inventory.use-case.ts";
 import { PrismaInventoryQueries } from "./modules/inventory/infrastructure/prisma-inventory-queries.repository.ts";
 import { RegisterMovement } from "./modules/movements/application/use-cases/register-movement/register-movement.use-case.ts";
@@ -19,6 +20,7 @@ import { PrismaMovementRepository } from "./modules/movements/infrastructure/pri
 import { CreateProduct } from "./modules/products/application/use-cases/create-product/create-product.use-case.ts";
 import { DeactivateProduct } from "./modules/products/application/use-cases/deactivate-product/deactivate-product.use-case.ts";
 import { IdentifyProduct } from "./modules/products/application/use-cases/identify-product/identify-product.use-case.ts";
+import { RestoreProduct } from "./modules/products/application/use-cases/restore-product/restore-product.use-case.ts";
 import { UpdateProduct } from "./modules/products/application/use-cases/update-product/update-product.use-case.ts";
 import { Base32IdGenerator } from "./modules/products/infrastructure/base32-id-generator.ts";
 import { PrismaProductRepository } from "./modules/products/infrastructure/prisma-product.repository.ts";
@@ -70,6 +72,7 @@ export function buildDependencies(config: Config): AppDependencies {
       identifyProduct: new IdentifyProduct(productRepository),
       updateProduct: new UpdateProduct(productRepository),
       deactivateProduct: new DeactivateProduct(productRepository),
+      restoreProduct: new RestoreProduct(productRepository),
     },
     movements: {
       registerMovement: new RegisterMovement(
@@ -81,6 +84,7 @@ export function buildDependencies(config: Config): AppDependencies {
       getProduct: new GetProduct(inventoryQueries),
       getMovementHistory: new GetMovementHistory(inventoryQueries),
       getLowStockAlerts: new GetLowStockAlerts(inventoryQueries),
+      listDeletedProducts: new ListDeletedProducts(inventoryQueries),
     },
   };
 }
