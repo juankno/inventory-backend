@@ -1,5 +1,8 @@
 export type Unit = "UNIT" | "KILOGRAM" | "GRAM" | "POUND" | "LITER";
 
+export const roundToCents = (value: number): number =>
+  Math.round(value * 100) / 100;
+
 export const hasAtMostTwoDecimals = (value: number): boolean => {
   return Math.round(value * 100) / 100 === value;
 };

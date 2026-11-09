@@ -63,6 +63,3 @@ const UNIT_LABELS: Record<Unit, string> = {
 };
 
 export const unitLabel = (unit: Unit): string => UNIT_LABELS[unit];
-
-export const roundMoney = (value: number): number =>
-  Math.round(value * 100) / 100;

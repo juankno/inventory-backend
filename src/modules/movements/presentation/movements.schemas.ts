@@ -1,6 +1,6 @@
 import z from "zod";
 
-const MAX_DECIMAL_12_2 = 9_999_999_999.99;
+import { MAX_DECIMAL_12_2 } from "../../../shared/validation/schemas.ts";
 
 export const registerMovementSchema = z.strictObject({
   productId: z.uuid(),

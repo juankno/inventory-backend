@@ -1,5 +1,6 @@
 import {
   isValidStockForUnit,
+  roundToCents,
   type Unit,
 } from "../../../../shared/domain/quantity.ts";
 import type {
@@ -11,8 +12,6 @@ export type StockChange = {
   quantity: number;
   resultingStock: number;
 };
-
-const roundToCents = (value: number): number => Math.round(value * 100) / 100;
 
 export const hasValidReason = (
   type: MovementType,
