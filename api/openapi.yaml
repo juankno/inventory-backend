@@ -9,7 +9,8 @@ info:
     - Los errores siempre tienen el cuerpo `{ code, message }`: `code` es estable y en inglés
       (la app decide qué hacer con él) y `message` está en español, listo para mostrar al usuario.
     - Las rutas protegidas exigen `Authorization: Bearer <token>`. Las únicas públicas son
-      `/auth/*` y `/health`.
+      `/auth/*`, `/health` y esta documentación (`/docs` y `/openapi.yaml`). La raíz del
+      dominio redirige a `/api/v1/docs`.
 
     Este documento solo incluye los endpoints ya implementados.
 servers:
@@ -578,6 +579,11 @@ paths:
         - **Idempotencia:** la app genera un UUID nuevo en `idempotencyKey` por cada acción del
           usuario y lo reutiliza si reintenta la misma petición. Si la clave ya se usó, se
           devuelve el movimiento que ya existía (200) y la existencia no cambia dos veces.
+        - **Precio de la venta:** cada salida guarda el precio de venta que tenía el producto,
+          para que los reportes no cambien si después sube el precio.
+        - **Deshacer:** para revertir un movimiento recién registrado, la app envía un ajuste a
+          la existencia anterior con `revertsMovementId`. Esa venta deja de contar en los
+          reportes, y cada movimiento se puede revertir una sola vez.
       operationId: registerMovement
       requestBody:
         required: true
@@ -646,7 +652,8 @@ paths:
 
             - `VALIDATION_ERROR`: falta un campo, sobra uno, `productId` o `idempotencyKey` no
               son UUID, el tipo o el motivo no existen, falta `reason` en una salida o llega en
-              una entrada o un ajuste.
+              una entrada o un ajuste, `revertsMovementId` llega en algo que no es un ajuste o
+              no es un movimiento de ese producto.
             - `INVALID_QUANTITY`: la cantidad tiene más de 2 decimales, no es entera con
               `UNIT`, o es 0 en una entrada o una salida.
             - `INVALID_JSON`: el cuerpo no es un JSON válido.
@@ -679,8 +686,9 @@ paths:
           description: |
             - `INSUFFICIENT_STOCK`: la salida es mayor que la existencia. No cambia nada; la
               app puede ofrecer registrar un ajuste.
-            - `IDEMPOTENCY_KEY_CONFLICT`: la `idempotencyKey` no se puede usar. No ocurre si la
-              app genera un UUID nuevo por cada acción.
+            - `IDEMPOTENCY_KEY_CONFLICT`: la `idempotencyKey` no se puede usar, o el movimiento
+              de `revertsMovementId` ya se había revertido. No ocurre si la app genera un UUID
+              nuevo por cada acción.
           content:
             application/json:
               schema:
@@ -929,8 +937,12 @@ paths:
       summary: Da de baja un producto (RF-08)
       description: |
         Baja lógica: el producto deja de aparecer en el inventario, la búsqueda, la
-        identificación por código y las alertas, pero **conserva su historial**. No hay borrado
-        físico. Dar de baja un producto que ya estaba dado de baja responde 404.
+        identificación por código y las alertas, pero **conserva su existencia, su historial y su
+        código**. No hay borrado físico. Dar de baja un producto que ya estaba dado de baja
+        responde 404.
+
+        Se guarda la fecha en `deleted_at`. El producto aparece en `GET /products/deleted` y se
+        puede devolver al inventario con `POST /products/{id}/restore`.
       operationId: deactivateProduct
       parameters:
         - $ref: "#/components/parameters/ProductId"
@@ -1386,6 +1398,10 @@ components:
           type: string
           format: uuid
           description: UUID que la app genera por cada acción del usuario y repite al reintentar.
+        revertsMovementId:
+          type: string
+          format: uuid
+          description: Solo en un `ADJUSTMENT` de "Deshacer". El movimiento de ese producto que este ajuste revierte.
 
     Movement:
       type: object
