@@ -9,4 +9,5 @@ export const registerMovementSchema = z.strictObject({
   reason: z.enum(["SALE", "CONSUMPTION", "LOSS"]).optional(),
   idempotencyKey: z.uuid(),
   revertsMovementId: z.uuid().optional(),
+  unitCost: z.number().min(0).max(MAX_DECIMAL_12_2).optional(),
 });

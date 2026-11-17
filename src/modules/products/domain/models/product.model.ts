@@ -8,6 +8,7 @@ export interface Product {
   name: string;
   unit: Unit;
   salePrice: number | null;
+  costPrice: number | null;
   stock: number;
   minStock: number | null;
   codeType: CodeType;

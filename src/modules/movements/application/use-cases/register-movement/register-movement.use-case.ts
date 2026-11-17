@@ -1,3 +1,4 @@
+import { hasAtMostTwoDecimals } from "../../../../../shared/domain/quantity.ts";
 import { AppError } from "../../../../../shared/errors/app-error.ts";
 import type {
   Movement,
@@ -23,6 +24,11 @@ export interface RegisterMovementInput {
   idempotencyKey: string;
   /** Solo en los ajustes de "Deshacer": el movimiento que este ajuste revierte. */
   revertsMovementId?: string;
+  /**
+   * Solo en las salidas: el costo unitario de esta salida. Sin él se usa el costo
+   * del producto; si es distinto, queda como el nuevo costo del producto.
+   */
+  unitCost?: number;
 }
 
 export interface RegisterMovementResult {
@@ -40,6 +46,12 @@ export class RegisterMovement {
     }
     if (data.revertsMovementId !== undefined && data.type !== "ADJUSTMENT") {
       throw new AppError("VALIDATION_ERROR");
+    }
+    if (data.unitCost !== undefined) {
+      if (data.type !== "OUTBOUND") throw new AppError("VALIDATION_ERROR");
+      if (!hasAtMostTwoDecimals(data.unitCost)) {
+        throw new AppError("INVALID_QUANTITY");
+      }
     }
 
     const replay = await this.findReplay(data);
@@ -72,6 +84,11 @@ export class RegisterMovement {
         return { created: false, movement: null, stock: product.stock };
       }
 
+      const outbound = data.type === "OUTBOUND";
+      const unitCost = outbound ? (data.unitCost ?? product.costPrice) : null;
+      const costChanged =
+        data.unitCost !== undefined && data.unitCost !== product.costPrice;
+
       try {
         const movement = await this.movementRepository.record({
           businessId: data.businessId,
@@ -82,9 +99,11 @@ export class RegisterMovement {
           quantity: change.quantity,
           resultingStock: change.resultingStock,
           idempotencyKey: data.idempotencyKey,
-          unitPrice: data.type === "OUTBOUND" ? product.salePrice : null,
+          unitPrice: outbound ? product.salePrice : null,
+          unitCost,
           revertsMovementId: data.revertsMovementId ?? null,
           expectedStock: product.stock,
+          ...(costChanged && { newCostPrice: data.unitCost }),
         });
         if (movement) {
           return { created: true, movement, stock: movement.resultingStock };

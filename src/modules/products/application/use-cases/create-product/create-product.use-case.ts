@@ -21,6 +21,7 @@ export interface CreateProductInput {
   unit: Unit;
   stock: number;
   salePrice?: number;
+  costPrice?: number;
   minStock?: number;
   code?: string;
 }
@@ -34,7 +35,7 @@ export class CreateProduct {
   ) {}
 
   async execute(data: CreateProductInput): Promise<Product> {
-    const optionalAmounts = [data.salePrice, data.minStock].filter(
+    const optionalAmounts = [data.salePrice, data.costPrice, data.minStock].filter(
       (amount) => amount !== undefined,
     );
     if (
@@ -51,6 +52,7 @@ export class CreateProduct {
       unit: data.unit,
       stock: data.stock,
       salePrice: data.salePrice ?? null,
+      costPrice: data.costPrice ?? null,
       minStock: data.minStock ?? null,
     };
 

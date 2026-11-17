@@ -23,6 +23,7 @@ describe("withStockStatus", () => {
       unit: "UNIT" as const,
       stock: 0,
       salePrice: 2500,
+      costPrice: null,
       minStock: 4,
       codeType: "INTERNAL" as const,
       code: "INV-7KQ2M9XA4T",

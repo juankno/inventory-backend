@@ -9,6 +9,7 @@ const gtinProduct: ProductData = {
   unit: "UNIT",
   stock: 24,
   salePrice: 3500,
+  costPrice: null,
   minStock: 6,
   codeType: "GTIN",
   code: "7702004003508",

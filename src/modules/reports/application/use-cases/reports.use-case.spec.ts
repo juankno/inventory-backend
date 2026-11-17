@@ -18,6 +18,7 @@ const sale = (overrides: Partial<ReportMovement> = {}): ReportMovement => ({
   quantity: 2,
   resultingStock: 8,
   unitPrice: 2500,
+  unitCost: null,
   reverted: false,
   ...overrides,
 });
@@ -31,12 +32,12 @@ function setup() {
 }
 
 describe("GenerateInventoryReport", () => {
-  it("should value the stock at the sale price and show its status", async () => {
+  it("should value the stock at cost and at sale price and show its status", async () => {
     const { queries, renderer } = setup();
     queries.products.push(
-      { name: "Arroz", code: "A", unit: "UNIT", stock: 10, minStock: 3, salePrice: 2500 },
-      { name: "Panela", code: "B", unit: "UNIT", stock: 0, minStock: 4, salePrice: null },
-      { name: "Atún", code: "C", unit: "UNIT", stock: 3, minStock: 4, salePrice: 1000 },
+      { name: "Arroz", code: "A", unit: "UNIT", stock: 10, minStock: 3, salePrice: 2500, costPrice: 1800 },
+      { name: "Panela", code: "B", unit: "UNIT", stock: 0, minStock: 4, salePrice: null, costPrice: null },
+      { name: "Atún", code: "C", unit: "UNIT", stock: 3, minStock: 4, salePrice: 1000, costPrice: null },
     );
 
     const report = await new GenerateInventoryReport(queries, renderer).execute({
@@ -46,10 +47,12 @@ describe("GenerateInventoryReport", () => {
 
     const sheet = renderer.rendered?.sheets[0];
     expect(report.filename).toBe("inventario-2026-11-11.xlsx");
-    expect(sheet?.rows[0]).toEqual(["Arroz", "A", 10, "Unidad", 3, 2500, 25000, "Disponible"]);
-    expect(sheet?.rows[1]?.slice(6)).toEqual([null, "Agotado"]);
-    expect(sheet?.rows[2]?.slice(6)).toEqual([3000, "Por agotarse"]);
-    expect(sheet?.totals?.[6]).toBe(28000);
+    expect(sheet?.rows[0]).toEqual([
+      "Arroz", "A", 10, "Unidad", 3, 1800, 2500, 18000, 25000, "Disponible",
+    ]);
+    expect(sheet?.rows[1]?.slice(7)).toEqual([null, null, "Agotado"]);
+    expect(sheet?.rows[2]?.slice(7)).toEqual([null, 3000, "Por agotarse"]);
+    expect(sheet?.totals?.slice(7, 9)).toEqual([18000, 28000]);
   });
 });
 
@@ -141,8 +144,28 @@ describe("GenerateSalesReport", () => {
     await new GenerateSalesReport(queries, renderer).execute(period);
 
     const [byProduct, detail] = renderer.rendered?.sheets ?? [];
-    expect(byProduct?.totals?.slice(4)).toEqual([0, 2]);
-    expect(detail?.rows[0]?.slice(5)).toEqual([null, null]);
+    expect(byProduct?.totals?.slice(4, 6)).toEqual([0, 2]);
+    expect(detail?.rows[0]?.slice(5)).toEqual([null, null, null, null]);
+  });
+
+  it("should use the cost of each sale to show the profit", async () => {
+    const { queries, renderer } = setup();
+    queries.movements.push(
+      sale({ quantity: 2, unitPrice: 2500, unitCost: 1800 }),
+      sale({ quantity: 1, unitPrice: 2500, unitCost: 2000 }),
+      sale({ quantity: 1, unitPrice: 2500, unitCost: null }),
+    );
+
+    await new GenerateSalesReport(queries, renderer).execute(period);
+
+    const [byProduct, detail] = renderer.rendered?.sheets ?? [];
+    expect(byProduct?.rows[0]?.slice(6)).toEqual([1900, 1]);
+    expect(byProduct?.totals?.slice(6)).toEqual([1900, 1]);
+    expect(detail?.rows.map((row) => row.slice(7))).toEqual([
+      [1800, 1400],
+      [2000, 500],
+      [null, null],
+    ]);
   });
 
   it("should put the product that sold the most first", async () => {
@@ -175,8 +198,23 @@ describe("GetSalesSummary", () => {
 
     const summary = await new GetSalesSummary(queries).execute("business-1", now);
 
-    expect(summary.today).toEqual({ sales: 1, total: 5000 });
-    expect(summary.week).toEqual({ sales: 2, total: 10000 });
+    expect(summary.today).toEqual({ sales: 1, total: 5000, profit: 0 });
+    expect(summary.week).toEqual({ sales: 2, total: 10000, profit: 0 });
+  });
+
+  it("should add up the profit of the sales that have a cost", async () => {
+    const { queries } = setup();
+    queries.movements.push(
+      sale({ unitCost: 1800 }),
+      sale({ unitCost: null }),
+      sale({ createdAt: new Date("2026-11-10T15:00:00Z"), unitCost: 2000 }),
+    );
+
+    const summary = await new GetSalesSummary(queries).execute("business-1", now);
+
+    expect(summary.today.profit).toBe(1400);
+    expect(summary.week.profit).toBe(2400);
+    expect(summary.salesWithoutCost).toBe(1);
   });
 
   it("should list at most 5 top products, the best first", async () => {
@@ -218,6 +256,6 @@ describe("GetSalesSummary", () => {
 
     const summary = await new GetSalesSummary(queries).execute("business-1", now);
 
-    expect(summary.today).toEqual({ sales: 0, total: 0 });
+    expect(summary.today).toEqual({ sales: 0, total: 0, profit: 0 });
   });
 });

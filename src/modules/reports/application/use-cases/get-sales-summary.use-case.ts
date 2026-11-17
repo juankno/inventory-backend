@@ -1,6 +1,7 @@
 import { currentPeriods } from "../../domain/report-period.ts";
 import {
   MAX_REPORT_ROWS,
+  saleProfit,
   type ReportMovement,
   type ReportProduct,
 } from "../../domain/report.model.ts";
@@ -12,6 +13,8 @@ const TOP_PRODUCTS = 5;
 export interface PeriodSales {
   total: number;
   sales: number;
+  /** Solo de las ventas que tienen precio y costo. */
+  profit: number;
 }
 
 export interface TopProduct {
@@ -28,12 +31,17 @@ export interface SalesSummary {
   topProducts: TopProduct[];
   /** Ventas de la semana que no suman porque el producto no tenía precio. */
   salesWithoutPrice: number;
+  /** Ventas de la semana que no suman a la ganancia porque no tenían costo. */
+  salesWithoutCost: number;
 }
 
 const periodSales = (sales: ReportMovement[]): PeriodSales => ({
   sales: sales.length,
   total: roundToCents(
     sales.reduce((sum, sale) => sum + sale.quantity * (sale.unitPrice ?? 0), 0),
+  ),
+  profit: roundToCents(
+    sales.reduce((sum, sale) => sum + (saleProfit(sale) ?? 0), 0),
   ),
 });
 
@@ -68,6 +76,7 @@ export class GetSalesSummary {
         .sort((a, b) => b.total - a.total || b.quantity - a.quantity)
         .slice(0, TOP_PRODUCTS),
       salesWithoutPrice: sales.filter((sale) => sale.unitPrice === null).length,
+      salesWithoutCost: sales.filter((sale) => sale.unitCost === null).length,
     };
   }
 }

@@ -13,6 +13,7 @@ export const createProductSchema = z.strictObject({
   unit,
   stock: amount,
   salePrice: amount.optional(),
+  costPrice: amount.optional(),
   minStock: amount.optional(),
   code: z.string().trim().min(1).max(32).optional(),
 });
@@ -26,6 +27,7 @@ export const updateProductSchema = z
     name: name.optional(),
     unit: unit.optional(),
     salePrice: amount.nullable().optional(),
+    costPrice: amount.nullable().optional(),
     minStock: amount.nullable().optional(),
   })
   .refine((changes) => Object.keys(changes).length > 0);

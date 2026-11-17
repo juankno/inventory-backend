@@ -68,6 +68,9 @@ model Product {
   name       String   @db.VarChar(80)
   unit       Unit
   salePrice  Decimal? @map("sale_price") @db.Decimal(12, 2)
+  // Lo que le cuesta al negocio cada unidad. Una venta puede registrar otro costo,
+  // que queda como el nuevo costo del producto.
+  costPrice  Decimal? @map("cost_price") @db.Decimal(12, 2)
   stock      Decimal  @default(0) @db.Decimal(12, 2)
   minStock   Decimal? @map("min_stock") @db.Decimal(12, 2)
   codeType   CodeType @map("code_type")
@@ -99,6 +102,9 @@ model Movement {
   // Precio de venta del producto al registrar una salida: los reportes no cambian
   // si después sube el precio. Las salidas anteriores a esta columna no lo tienen.
   unitPrice      Decimal?        @map("unit_price") @db.Decimal(12, 2)
+  // Costo unitario al registrar una salida, para calcular la ganancia de cada venta.
+  // Las salidas anteriores a esta columna no lo tienen.
+  unitCost       Decimal?        @map("unit_cost") @db.Decimal(12, 2)
   // Con "Deshacer", el ajuste apunta al movimiento que revierte: una venta deshecha
   // no cuenta en los reportes. Cada movimiento se puede revertir una sola vez.
   revertsMovementId String?      @unique @map("reverts_movement_id") @db.Uuid

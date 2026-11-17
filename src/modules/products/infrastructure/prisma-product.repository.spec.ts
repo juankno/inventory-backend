@@ -12,6 +12,7 @@ const productData: ProductData = {
   unit: "UNIT",
   stock: 24,
   salePrice: 3500,
+  costPrice: null,
   minStock: 6,
   codeType: "GTIN",
   code: "7702004003508",
@@ -25,6 +26,7 @@ const createdRow = {
   name: "Arroz Diana 500 g",
   unit: "UNIT",
   salePrice: new Prisma.Decimal("3500.00"),
+  costPrice: null,
   stock: new Prisma.Decimal("24.00"),
   minStock: new Prisma.Decimal("6.00"),
   codeType: "GTIN",
@@ -76,6 +78,7 @@ describe("PrismaProductRepository", () => {
           name: "Arroz Diana 500 g",
           unit: "UNIT",
           salePrice: 3500,
+          costPrice: null,
           stock: 24,
           minStock: 6,
           codeType: "GTIN",
@@ -123,6 +126,7 @@ describe("PrismaProductRepository", () => {
         unit: "KILOGRAM",
         stock: new Prisma.Decimal("12.50"),
         salePrice: new Prisma.Decimal("4200.75"),
+        costPrice: null,
       });
 
       const product = await repository.create(productData);
@@ -137,12 +141,14 @@ describe("PrismaProductRepository", () => {
       create.mockResolvedValue({
         ...createdRow,
         salePrice: null,
+        costPrice: null,
         minStock: null,
       });
 
       const product = await repository.create({
         ...productData,
         salePrice: null,
+        costPrice: null,
         minStock: null,
       });
 
@@ -206,6 +212,7 @@ describe("PrismaProductRepository", () => {
         ...createdRow,
         stock: new Prisma.Decimal("12.50"),
         salePrice: null,
+        costPrice: null,
       });
 
       const product = await repository.findActiveByCode(
@@ -219,6 +226,7 @@ describe("PrismaProductRepository", () => {
         name: "Arroz Diana 500 g",
         unit: "UNIT",
         salePrice: null,
+        costPrice: null,
         stock: 12.5,
         minStock: 6,
         codeType: "GTIN",
@@ -265,12 +273,13 @@ describe("PrismaProductRepository", () => {
       const product = await repository.update("business-1", "product-1", {
         name: "Arroz Roa 1 kg",
         salePrice: null,
+        costPrice: null,
       });
 
       expect(product?.name).toBe("Arroz Roa 1 kg");
       expect(update).toHaveBeenCalledWith({
         where: { id: "product-1", businessId: "business-1", isActive: true },
-        data: { name: "Arroz Roa 1 kg", salePrice: null },
+        data: { name: "Arroz Roa 1 kg", salePrice: null, costPrice: null },
         select: expect.objectContaining({ id: true, stock: true }),
       });
     });

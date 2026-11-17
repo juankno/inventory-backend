@@ -19,8 +19,8 @@ export class UpdateProduct {
   constructor(private readonly productRepository: ProductRepository) {}
 
   async execute(data: UpdateProductInput): Promise<Product> {
-    const { salePrice, minStock, unit } = data.changes;
-    const amounts = [salePrice, minStock].filter(
+    const { salePrice, costPrice, minStock, unit } = data.changes;
+    const amounts = [salePrice, costPrice, minStock].filter(
       (amount) => amount !== undefined && amount !== null,
     );
     if (!amounts.every(hasAtMostTwoDecimals)) {
