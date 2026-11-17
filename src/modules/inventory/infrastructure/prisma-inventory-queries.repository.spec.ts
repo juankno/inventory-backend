@@ -25,6 +25,8 @@ const movementRow = (id: string) => ({
   reason: "SALE",
   quantity: new Prisma.Decimal("1.25"),
   resultingStock: new Prisma.Decimal("2.50"),
+  unitPrice: new Prisma.Decimal("2500"),
+  unitCost: new Prisma.Decimal("1800.50"),
   createdAt: new Date("2026-11-08T12:00:00Z"),
 });
 
@@ -146,6 +148,22 @@ describe("PrismaInventoryQueries", () => {
       expect(page.items.map((movement) => movement.id)).toEqual(["m-3", "m-2"]);
       expect(page.items[0]).toMatchObject({ quantity: 1.25, resultingStock: 2.5 });
       expect(page.nextCursor).toBe("m-2");
+    });
+
+    it("should return the unit price and cost of each movement, or null when missing", async () => {
+      const { findManyMovements, queries } = setup();
+      findManyMovements.mockResolvedValue([
+        movementRow("m-2"),
+        { ...movementRow("m-1"), type: "INBOUND", reason: null, unitPrice: null, unitCost: null },
+      ]);
+
+      const page = await queries.listMovements("business-1", PRODUCT_ID, { limit: 2 });
+
+      expect(findManyMovements).toHaveBeenCalledWith(
+        expect.objectContaining({ select: expect.objectContaining({ unitPrice: true, unitCost: true }) }),
+      );
+      expect(page.items[0]).toMatchObject({ unitPrice: 2500, unitCost: 1800.5 });
+      expect(page.items[1]).toMatchObject({ unitPrice: null, unitCost: null });
     });
 
     it("should return a null cursor on the last page", async () => {

@@ -28,6 +28,8 @@ const movementSelect = {
   reason: true,
   quantity: true,
   resultingStock: true,
+  unitPrice: true,
+  unitCost: true,
   createdAt: true,
 } satisfies Prisma.MovementSelect;
 
@@ -52,6 +54,8 @@ const toHistoryMovement = (row: MovementRow): HistoryMovement => ({
   reason: row.reason,
   quantity: row.quantity.toNumber(),
   resultingStock: row.resultingStock.toNumber(),
+  unitPrice: row.unitPrice?.toNumber() ?? null,
+  unitCost: row.unitCost?.toNumber() ?? null,
   createdAt: row.createdAt,
 });
 
