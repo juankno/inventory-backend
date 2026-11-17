@@ -1484,7 +1484,7 @@ components:
 
     HistoryMovement:
       type: object
-      required: [id, type, reason, quantity, resultingStock, createdAt]
+      required: [id, type, reason, quantity, resultingStock, unitPrice, unitCost, createdAt]
       properties:
         id:
           type: string
@@ -1500,6 +1500,12 @@ components:
           description: Lo que entró o salió; en un ajuste, la diferencia (puede ser negativa).
         resultingStock:
           type: number
+        unitPrice:
+          type: [number, "null"]
+          description: Precio de venta unitario con que se registró la salida. `null` en entradas y ajustes, o si el producto no tenía precio.
+        unitCost:
+          type: [number, "null"]
+          description: Costo unitario con que se registró la salida. `null` en entradas y ajustes, o si no había costo (por ejemplo, ventas anteriores al costo del producto).
         createdAt:
           type: string
           format: date-time

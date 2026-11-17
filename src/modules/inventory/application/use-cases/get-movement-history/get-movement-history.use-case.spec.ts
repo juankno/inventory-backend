@@ -34,6 +34,8 @@ function setup(movementCount: number, product: Partial<StoredProduct> = {}) {
       reason: null,
       quantity: 1,
       resultingStock: index,
+      unitPrice: null,
+      unitCost: null,
       createdAt: new Date(Date.UTC(2026, 10, 1, 0, index)),
     });
   }
