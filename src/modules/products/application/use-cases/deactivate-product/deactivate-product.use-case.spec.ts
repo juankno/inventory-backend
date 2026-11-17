@@ -9,6 +9,7 @@ const productData: ProductData = {
   unit: "UNIT",
   stock: 4,
   salePrice: 2500,
+  costPrice: null,
   minStock: 2,
   codeType: "INTERNAL",
   code: "INV-7KQ2M9XA4T",

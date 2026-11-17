@@ -21,6 +21,7 @@ const newMovement: NewMovement = {
   resultingStock: 6,
   idempotencyKey: KEY,
   unitPrice: 2500,
+  unitCost: null,
   revertsMovementId: null,
   expectedStock: 10,
 };
@@ -35,6 +36,7 @@ const movementRow = {
   resultingStock: new Prisma.Decimal("6.00"),
   idempotencyKey: KEY,
   unitPrice: new Prisma.Decimal("2500.00"),
+  unitCost: null,
   revertsMovementId: null,
   createdAt,
 };
@@ -73,7 +75,7 @@ describe("PrismaMovementRepository", () => {
 
       expect(findFirst).toHaveBeenCalledWith({
         where: { id: PRODUCT_ID, businessId: "business-1", isActive: true },
-        select: { unit: true, stock: true, salePrice: true },
+        select: { unit: true, stock: true, salePrice: true, costPrice: true },
       });
     });
 
@@ -83,11 +85,17 @@ describe("PrismaMovementRepository", () => {
         unit: "KILOGRAM",
         stock: new Prisma.Decimal("2.50"),
         salePrice: new Prisma.Decimal("4000.00"),
+        costPrice: null,
       });
 
       const product = await repository.findActiveProduct("business-1", PRODUCT_ID);
 
-      expect(product).toEqual({ unit: "KILOGRAM", stock: 2.5, salePrice: 4000 });
+      expect(product).toEqual({
+        unit: "KILOGRAM",
+        stock: 2.5,
+        salePrice: 4000,
+        costPrice: null,
+      });
     });
 
     it("should return null when the product is missing, inactive or from another business", async () => {
@@ -119,6 +127,7 @@ describe("PrismaMovementRepository", () => {
           resultingStock: 6,
           idempotencyKey: KEY,
           unitPrice: 2500,
+          unitCost: null,
           revertsMovementId: null,
           createdAt,
         },
@@ -149,6 +158,29 @@ describe("PrismaMovementRepository", () => {
       });
     });
 
+    it("should save a new cost on the product together with the stock", async () => {
+      const { updateMany, create, repository } = setup();
+      updateMany.mockResolvedValue({ count: 1 });
+      create.mockResolvedValue({ ...movementRow, unitCost: new Prisma.Decimal("1800.00") });
+
+      const movement = await repository.record({
+        ...newMovement,
+        unitCost: 1800,
+        newCostPrice: 1800,
+      });
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: PRODUCT_ID, businessId: "business-1", isActive: true, stock: 10 },
+        data: { stock: 6, costPrice: 1800 },
+      });
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.not.objectContaining({ newCostPrice: expect.anything() }),
+        }),
+      );
+      expect(movement?.unitCost).toBe(1800);
+    });
+
     it("should create the movement without the businessId and expectedStock fields", async () => {
       const { updateMany, create, repository } = setup();
       updateMany.mockResolvedValue({ count: 1 });
@@ -166,6 +198,7 @@ describe("PrismaMovementRepository", () => {
           resultingStock: 6,
           idempotencyKey: KEY,
           unitPrice: 2500,
+          unitCost: null,
           revertsMovementId: null,
         },
         select: expect.objectContaining({ id: true, resultingStock: true }),

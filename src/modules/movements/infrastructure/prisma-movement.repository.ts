@@ -18,6 +18,7 @@ const movementSelect = {
   resultingStock: true,
   idempotencyKey: true,
   unitPrice: true,
+  unitCost: true,
   revertsMovementId: true,
   createdAt: true,
 } satisfies Prisma.MovementSelect;
@@ -35,6 +36,7 @@ const toMovement = (row: MovementRow): Movement => {
     resultingStock: row.resultingStock.toNumber(),
     idempotencyKey: row.idempotencyKey,
     unitPrice: row.unitPrice?.toNumber() ?? null,
+    unitCost: row.unitCost?.toNumber() ?? null,
     revertsMovementId: row.revertsMovementId,
     createdAt: row.createdAt,
   };
@@ -49,13 +51,14 @@ export class PrismaMovementRepository implements MovementRepository {
   ): Promise<StockedProduct | null> {
     const row = await this.prisma.product.findFirst({
       where: { id: productId, businessId, isActive: true },
-      select: { unit: true, stock: true, salePrice: true },
+      select: { unit: true, stock: true, salePrice: true, costPrice: true },
     });
     return row
       ? {
           unit: row.unit,
           stock: row.stock.toNumber(),
           salePrice: row.salePrice?.toNumber() ?? null,
+          costPrice: row.costPrice?.toNumber() ?? null,
         }
       : null;
   }
@@ -88,6 +91,7 @@ export class PrismaMovementRepository implements MovementRepository {
   async record({
     businessId,
     expectedStock,
+    newCostPrice,
     ...data
   }: NewMovement): Promise<Movement | null> {
     try {
@@ -99,7 +103,10 @@ export class PrismaMovementRepository implements MovementRepository {
             isActive: true,
             stock: expectedStock,
           },
-          data: { stock: data.resultingStock },
+          data: {
+            stock: data.resultingStock,
+            ...(newCostPrice !== undefined && { costPrice: newCostPrice }),
+          },
         });
         if (count === 0) return null;
 

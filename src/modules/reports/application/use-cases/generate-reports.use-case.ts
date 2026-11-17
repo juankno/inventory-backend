@@ -8,6 +8,7 @@ import {
   type ReportMovement,
   type ReportProduct,
   type ReportSheet,
+  saleProfit,
 } from "../../domain/report.model.ts";
 import { roundToCents } from "../../../../shared/domain/quantity.ts";
 import type { ReportQueries } from "../ports/report-queries.repository.ts";
@@ -42,6 +43,9 @@ const signedQuantity = ({ type, quantity }: ReportMovement): number =>
 const stockValue = ({ stock, salePrice }: ReportProduct): number | null =>
   salePrice === null ? null : roundToCents(stock * salePrice);
 
+const stockCost = ({ stock, costPrice }: ReportProduct): number | null =>
+  costPrice === null ? null : roundToCents(stock * costPrice);
+
 const saleTotal = ({ quantity, unitPrice }: ReportMovement): number | null =>
   unitPrice === null ? null : roundToCents(quantity * unitPrice);
 
@@ -60,7 +64,9 @@ const inventorySheet = (products: ReportProduct[]): ReportSheet => ({
     { header: "Existencias", format: "quantity", width: 13 },
     { header: "Unidad", format: "text", width: 10 },
     { header: "Mínimo", format: "quantity", width: 10 },
+    { header: "Costo", format: "money", width: 13 },
     { header: "Precio de venta", format: "money", width: 16 },
+    { header: "Valor a costo", format: "money", width: 16 },
     { header: "Valor a precio de venta", format: "money", width: 22 },
     { header: "Estado", format: "text", width: 14 },
   ],
@@ -70,7 +76,9 @@ const inventorySheet = (products: ReportProduct[]): ReportSheet => ({
     product.stock,
     unitLabel(product.unit),
     product.minStock,
+    product.costPrice,
     product.salePrice,
+    stockCost(product),
     stockValue(product),
     STATUS_LABELS[getStockStatus(product.stock, product.minStock)],
   ]),
@@ -81,6 +89,8 @@ const inventorySheet = (products: ReportProduct[]): ReportSheet => ({
     null,
     null,
     null,
+    null,
+    roundToCents(products.reduce((sum, item) => sum + (stockCost(item) ?? 0), 0)),
     roundToCents(products.reduce((sum, item) => sum + (stockValue(item) ?? 0), 0)),
     null,
   ],
@@ -118,7 +128,9 @@ interface ProductSales {
   unit: ReportProduct["unit"];
   quantity: number;
   total: number;
+  profit: number;
   withoutPrice: number;
+  withoutCost: number;
 }
 
 const groupByProduct = (sales: ReportMovement[]): ProductSales[] => {
@@ -130,12 +142,16 @@ const groupByProduct = (sales: ReportMovement[]): ProductSales[] => {
       unit: sale.unit,
       quantity: 0,
       total: 0,
+      profit: 0,
       withoutPrice: 0,
+      withoutCost: 0,
     };
     const total = saleTotal(sale);
     item.quantity = roundToCents(item.quantity + sale.quantity);
     item.total = roundToCents(item.total + (total ?? 0));
+    item.profit = roundToCents(item.profit + (saleProfit(sale) ?? 0));
     if (total === null) item.withoutPrice += 1;
+    if (sale.unitCost === null) item.withoutCost += 1;
     byCode.set(sale.productCode, item);
   }
   return [...byCode.values()].sort(
@@ -154,6 +170,8 @@ const salesByProductSheet = (sales: ReportMovement[]): ReportSheet => {
       { header: "Unidad", format: "text", width: 10 },
       { header: "Total vendido", format: "money", width: 15 },
       { header: "Ventas sin precio", format: "quantity", width: 17 },
+      { header: "Ganancia", format: "money", width: 15 },
+      { header: "Ventas sin costo", format: "quantity", width: 17 },
     ],
     rows: products.map((item) => [
       item.name,
@@ -162,6 +180,8 @@ const salesByProductSheet = (sales: ReportMovement[]): ReportSheet => {
       unitLabel(item.unit),
       item.total,
       item.withoutPrice || null,
+      item.profit,
+      item.withoutCost || null,
     ]),
     totals: [
       "Total",
@@ -170,6 +190,8 @@ const salesByProductSheet = (sales: ReportMovement[]): ReportSheet => {
       null,
       roundToCents(products.reduce((sum, item) => sum + item.total, 0)),
       products.reduce((sum, item) => sum + item.withoutPrice, 0) || null,
+      roundToCents(products.reduce((sum, item) => sum + item.profit, 0)),
+      products.reduce((sum, item) => sum + item.withoutCost, 0) || null,
     ],
   };
 };
@@ -184,6 +206,8 @@ const saleDetailSheet = (sales: ReportMovement[]): ReportSheet => ({
     { header: "Unidad", format: "text", width: 10 },
     { header: "Precio", format: "money", width: 13 },
     { header: "Total", format: "money", width: 13 },
+    { header: "Costo", format: "money", width: 13 },
+    { header: "Ganancia", format: "money", width: 13 },
   ],
   rows: sales.map((sale) => [
     toBogotaClock(sale.createdAt),
@@ -193,6 +217,8 @@ const saleDetailSheet = (sales: ReportMovement[]): ReportSheet => ({
     unitLabel(sale.unit),
     sale.unitPrice,
     saleTotal(sale),
+    sale.unitCost,
+    saleProfit(sale),
   ]),
 });
 

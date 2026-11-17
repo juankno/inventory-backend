@@ -7,6 +7,7 @@ export interface InventoryProduct {
   unit: Unit;
   stock: number;
   salePrice: number | null;
+  costPrice: number | null;
   minStock: number | null;
   codeType: "GTIN" | "INTERNAL";
   code: string;

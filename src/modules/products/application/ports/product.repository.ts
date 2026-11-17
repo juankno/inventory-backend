@@ -8,7 +8,7 @@ export interface ProductData extends Omit<
 }
 
 export type ProductChanges = Partial<
-  Pick<Product, "name" | "unit" | "salePrice" | "minStock">
+  Pick<Product, "name" | "unit" | "salePrice" | "costPrice" | "minStock">
 >;
 
 export interface ProductRepository {

@@ -377,7 +377,7 @@ paths:
           que la app usa para imprimir el QR.
         - Si `stock` es mayor que 0, se registra a la vez un movimiento de entrada con esa
           cantidad, para que el historial del producto empiece completo.
-        - `stock`, `salePrice` y `minStock` admiten máximo 2 decimales. Con `unit: UNIT`, el
+        - `stock`, `salePrice`, `costPrice` y `minStock` admiten máximo 2 decimales. Con `unit: UNIT`, el
           `stock` debe ser entero.
       operationId: createProduct
       requestBody:
@@ -581,6 +581,9 @@ paths:
           devuelve el movimiento que ya existía (200) y la existencia no cambia dos veces.
         - **Precio de la venta:** cada salida guarda el precio de venta que tenía el producto,
           para que los reportes no cambien si después sube el precio.
+        - **Costo de la venta:** cada salida guarda también un costo unitario, para calcular la
+          ganancia. Sin `unitCost` se usa el costo del producto; si llega uno distinto, queda
+          como el nuevo costo del producto.
         - **Deshacer:** para revertir un movimiento recién registrado, la app envía un ajuste a
           la existencia anterior con `revertsMovementId`. Esa venta deja de contar en los
           reportes, y cada movimiento se puede revertir una sola vez.
@@ -653,9 +656,9 @@ paths:
             - `VALIDATION_ERROR`: falta un campo, sobra uno, `productId` o `idempotencyKey` no
               son UUID, el tipo o el motivo no existen, falta `reason` en una salida o llega en
               una entrada o un ajuste, `revertsMovementId` llega en algo que no es un ajuste o
-              no es un movimiento de ese producto.
-            - `INVALID_QUANTITY`: la cantidad tiene más de 2 decimales, no es entera con
-              `UNIT`, o es 0 en una entrada o una salida.
+              no es un movimiento de ese producto, o `unitCost` llega en algo que no es una salida.
+            - `INVALID_QUANTITY`: la cantidad o `unitCost` tienen más de 2 decimales, la cantidad no
+              es entera con `UNIT`, o es 0 en una entrada o una salida.
             - `INVALID_JSON`: el cuerpo no es un JSON válido.
           content:
             application/json:
@@ -878,8 +881,8 @@ paths:
       tags: [Products]
       summary: Edita un producto (RF-07)
       description: |
-        Cambia solo los campos que se envían. Se pueden editar `name`, `unit`, `salePrice` y
-        `minStock`; `salePrice` y `minStock` aceptan `null` para quitarlos.
+        Cambia solo los campos que se envían. Se pueden editar `name`, `unit`, `salePrice`,
+        `costPrice` y `minStock`; `salePrice`, `costPrice` y `minStock` aceptan `null` para quitarlos.
 
         La existencia (`stock`) **no se edita aquí**: solo cambia con un movimiento. El código y
         su tipo tampoco se pueden cambiar. Si llegan en el cuerpo, la respuesta es 400.
@@ -1039,6 +1042,8 @@ paths:
 
         - El total usa el precio guardado en cada venta. Las ventas sin precio no suman y se
           cuentan aparte en `salesWithoutPrice`.
+        - La ganancia (`profit`) usa el precio y el costo guardados en cada venta. Las ventas sin
+          costo no suman a la ganancia y se cuentan aparte en `salesWithoutCost`.
         - Las ventas deshechas no cuentan.
       operationId: getSalesSummary
       responses:
@@ -1048,7 +1053,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [today, week, topProducts, salesWithoutPrice]
+                required: [today, week, topProducts, salesWithoutPrice, salesWithoutCost]
                 properties:
                   today:
                     $ref: "#/components/schemas/PeriodSales"
@@ -1070,6 +1075,8 @@ paths:
                         total:
                           type: number
                   salesWithoutPrice:
+                    type: integer
+                  salesWithoutCost:
                     type: integer
         "401":
           $ref: "#/components/responses/Unauthorized"
@@ -1174,18 +1181,21 @@ components:
   schemas:
     PeriodSales:
       type: object
-      required: [total, sales]
+      required: [total, sales, profit]
       properties:
         total:
           type: number
           description: Valor vendido, con el precio guardado en cada venta.
+        profit:
+          type: number
+          description: Ganancia de las ventas que tienen precio y costo.
         sales:
           type: integer
           description: Número de ventas.
 
     DeletedProduct:
       type: object
-      required: [id, name, unit, stock, salePrice, minStock, codeType, code, deletedAt]
+      required: [id, name, unit, stock, salePrice, costPrice, minStock, codeType, code, deletedAt]
       properties:
         id:
           type: string
@@ -1199,6 +1209,9 @@ components:
           type: number
         salePrice:
           type: [number, "null"]
+        costPrice:
+          type: [number, "null"]
+          description: Lo que le cuesta al negocio cada unidad.
         minStock:
           type: [number, "null"]
         codeType:
@@ -1338,6 +1351,10 @@ components:
           type: number
           minimum: 0
           description: Precio de venta en pesos. Máximo 2 decimales.
+        costPrice:
+          type: number
+          minimum: 0
+          description: Lo que le cuesta al negocio cada unidad, en pesos. Máximo 2 decimales.
         minStock:
           type: number
           minimum: 0
@@ -1349,7 +1366,7 @@ components:
 
     Product:
       type: object
-      required: [id, name, unit, stock, salePrice, minStock, codeType, code]
+      required: [id, name, unit, stock, salePrice, costPrice, minStock, codeType, code]
       properties:
         id:
           type: string
@@ -1362,6 +1379,9 @@ components:
           type: number
         salePrice:
           type: [number, "null"]
+        costPrice:
+          type: [number, "null"]
+          description: Lo que le cuesta al negocio cada unidad.
         minStock:
           type: [number, "null"]
         codeType:
@@ -1402,6 +1422,10 @@ components:
           type: string
           format: uuid
           description: Solo en un `ADJUSTMENT` de "Deshacer". El movimiento de ese producto que este ajuste revierte.
+        unitCost:
+          type: number
+          minimum: 0
+          description: Solo en un `OUTBOUND`. Costo unitario de esta salida; si es distinto, queda como el costo del producto.
 
     Movement:
       type: object
@@ -1507,6 +1531,10 @@ components:
           type: [number, "null"]
           minimum: 0
           description: Máximo 2 decimales. `null` quita el precio.
+        costPrice:
+          type: [number, "null"]
+          minimum: 0
+          description: Máximo 2 decimales. `null` quita el costo.
         minStock:
           type: [number, "null"]
           minimum: 0

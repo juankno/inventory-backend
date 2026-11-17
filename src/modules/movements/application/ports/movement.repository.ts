@@ -5,6 +5,7 @@ export interface StockedProduct {
   unit: Unit;
   stock: number;
   salePrice: number | null;
+  costPrice: number | null;
 }
 
 export interface StoredMovement {
@@ -15,6 +16,8 @@ export interface StoredMovement {
 export interface NewMovement extends Omit<Movement, "id" | "createdAt"> {
   businessId: string;
   expectedStock: number;
+  /** Si la salida trajo otro costo: queda como el nuevo costo del producto. */
+  newCostPrice?: number;
 }
 
 export interface MovementRepository {
