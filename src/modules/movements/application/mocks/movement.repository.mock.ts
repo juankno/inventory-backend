@@ -14,6 +14,7 @@ export type ProductStock = {
   unit: Unit;
   stock: number;
   salePrice?: number | null;
+  costPrice?: number | null;
   isActive: boolean;
 };
 
@@ -32,6 +33,7 @@ export class MovementRepositoryMock implements MovementRepository {
           unit: product.unit,
           stock: product.stock,
           salePrice: product.salePrice ?? null,
+          costPrice: product.costPrice ?? null,
         }
       : null;
   }
@@ -62,6 +64,7 @@ export class MovementRepositoryMock implements MovementRepository {
   async record({
     businessId,
     expectedStock,
+    newCostPrice,
     ...data
   }: NewMovement): Promise<Movement | null> {
     this.beforeRecord?.();
@@ -73,6 +76,7 @@ export class MovementRepositoryMock implements MovementRepository {
     }
 
     product.stock = data.resultingStock;
+    if (newCostPrice !== undefined) product.costPrice = newCostPrice;
     const movement: Movement = {
       id: `movement-${this.stored.length + 1}`,
       ...data,

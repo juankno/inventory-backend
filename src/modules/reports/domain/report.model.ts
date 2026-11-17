@@ -7,6 +7,7 @@ export interface ReportProduct {
   stock: number;
   minStock: number | null;
   salePrice: number | null;
+  costPrice: number | null;
 }
 
 export interface ReportMovement {
@@ -21,6 +22,7 @@ export interface ReportMovement {
   quantity: number;
   resultingStock: number;
   unitPrice: number | null;
+  unitCost: number | null;
   /** Si se deshizo con "Deshacer". */
   reverted: boolean;
 }
@@ -61,5 +63,15 @@ const UNIT_LABELS: Record<Unit, string> = {
   POUND: "Libra",
   LITER: "Litro",
 };
+
+/** Ganancia de una venta, o null si le falta el precio o el costo. */
+export const saleProfit = ({
+  quantity,
+  unitPrice,
+  unitCost,
+}: ReportMovement): number | null =>
+  unitPrice === null || unitCost === null
+    ? null
+    : Math.round(quantity * (unitPrice - unitCost) * 100) / 100;
 
 export const unitLabel = (unit: Unit): string => UNIT_LABELS[unit];

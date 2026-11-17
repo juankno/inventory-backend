@@ -11,6 +11,7 @@ const movementSelect = {
   quantity: true,
   resultingStock: true,
   unitPrice: true,
+  unitCost: true,
   product: { select: { name: true, code: true, unit: true } },
   revertedBy: { select: { id: true } },
 } satisfies Prisma.MovementSelect;
@@ -28,6 +29,7 @@ const toReportMovement = (row: MovementRow): ReportMovement => ({
   quantity: row.quantity.toNumber(),
   resultingStock: row.resultingStock.toNumber(),
   unitPrice: row.unitPrice?.toNumber() ?? null,
+  unitCost: row.unitCost?.toNumber() ?? null,
   reverted: row.revertedBy !== null,
 });
 
@@ -45,6 +47,7 @@ export class PrismaReportQueries implements ReportQueries {
         stock: true,
         minStock: true,
         salePrice: true,
+        costPrice: true,
       },
     });
     return rows.map((row) => ({
@@ -54,6 +57,7 @@ export class PrismaReportQueries implements ReportQueries {
       stock: row.stock.toNumber(),
       minStock: row.minStock?.toNumber() ?? null,
       salePrice: row.salePrice?.toNumber() ?? null,
+      costPrice: row.costPrice?.toNumber() ?? null,
     }));
   }
 

@@ -2,7 +2,7 @@ import type { Movement } from "../domain/models/movement.model.ts";
 
 export type MovementResponse = Omit<
   Movement,
-  "userId" | "idempotencyKey" | "unitPrice" | "revertsMovementId"
+  "userId" | "idempotencyKey" | "unitPrice" | "unitCost" | "revertsMovementId"
 >;
 
 export const toMovementResponse = (movement: Movement): MovementResponse => {

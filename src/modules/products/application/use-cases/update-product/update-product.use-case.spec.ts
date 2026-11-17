@@ -9,6 +9,7 @@ const productData: ProductData = {
   unit: "KILOGRAM",
   stock: 2.5,
   salePrice: 22000,
+  costPrice: null,
   minStock: 1,
   codeType: "INTERNAL",
   code: "INV-7KQ2M9XA4T",
@@ -34,6 +35,7 @@ describe("UpdateProduct", () => {
       expect(updated).toMatchObject({
         name: "Queso costeño",
         salePrice: 24000,
+        costPrice: null,
         unit: "KILOGRAM",
         stock: 2.5,
         minStock: 1,

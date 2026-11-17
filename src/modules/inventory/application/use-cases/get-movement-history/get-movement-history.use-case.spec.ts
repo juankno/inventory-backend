@@ -17,6 +17,7 @@ const storedProduct: StoredProduct = {
   unit: "UNIT",
   stock: 10,
   salePrice: 2500,
+  costPrice: null,
   minStock: 4,
   codeType: "INTERNAL",
   code: "INV-7KQ2M9XA4T",

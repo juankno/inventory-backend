@@ -10,6 +10,7 @@ async function setup() {
     unit: "UNIT",
     stock: 7,
     salePrice: null,
+    costPrice: null,
     minStock: null,
     codeType: "INTERNAL",
     code: "INV-7KQ2M9XA4T",

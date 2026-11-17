@@ -75,6 +75,70 @@ describe("RegisterMovement", () => {
     });
   });
 
+  describe("unit cost", () => {
+    it("should use the product cost on an OUTBOUND without a cost", async () => {
+      const { registerMovement, product } = setup(10);
+      product.costPrice = 1500;
+
+      const result = await registerMovement.execute(saleInput);
+
+      expect(result.movement?.unitCost).toBe(1500);
+      expect(product.costPrice).toBe(1500);
+    });
+
+    it("should store a different cost and keep it as the new product cost", async () => {
+      const { registerMovement, product } = setup(10);
+      product.costPrice = 1500;
+
+      const result = await registerMovement.execute({ ...saleInput, unitCost: 1800 });
+
+      expect(result.movement?.unitCost).toBe(1800);
+      expect(product.costPrice).toBe(1800);
+    });
+
+    it("should leave the cost empty if the product has none and none was sent", async () => {
+      const { registerMovement } = setup(10);
+
+      const result = await registerMovement.execute(saleInput);
+
+      expect(result.movement?.unitCost).toBeNull();
+    });
+
+    it("should not store a cost on an ADJUSTMENT", async () => {
+      const { registerMovement, product } = setup(10);
+      product.costPrice = 1500;
+
+      const result = await registerMovement.execute({
+        ...saleInput,
+        type: "ADJUSTMENT",
+        reason: undefined,
+      });
+
+      expect(result.movement?.unitCost).toBeNull();
+    });
+
+    it("should only accept a cost on an OUTBOUND", async () => {
+      const { registerMovement } = setup(10);
+
+      const registering = registerMovement.execute({
+        ...saleInput,
+        type: "INBOUND",
+        reason: undefined,
+        unitCost: 1800,
+      });
+
+      await expect(registering).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    });
+
+    it("should reject a cost with more than 2 decimals", async () => {
+      const { registerMovement } = setup(10);
+
+      const registering = registerMovement.execute({ ...saleInput, unitCost: 10.123 });
+
+      await expect(registering).rejects.toMatchObject({ code: "INVALID_QUANTITY" });
+    });
+  });
+
   describe("undo", () => {
     const adjustment = {
       ...saleInput,
@@ -316,6 +380,7 @@ describe("RegisterMovement", () => {
           resultingStock: 6,
           idempotencyKey: saleInput.idempotencyKey,
           unitPrice: null,
+          unitCost: null,
           revertsMovementId: null,
           createdAt: new Date(),
         },
