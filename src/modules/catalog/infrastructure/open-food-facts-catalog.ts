@@ -2,7 +2,8 @@ import type { ExternalCatalog } from "../application/ports/external-catalog.port
 import type { CatalogEntry } from "../domain/product-suggestion.model.ts";
 
 const BASE_URL = "https://world.openfoodfacts.org/api/v2/product";
-const FIELDS = "product_name_es,product_name,brands,quantity,image_front_small_url";
+const FIELDS =
+  "product_name_es,product_name,brands,quantity,image_front_small_url,image_front_url";
 // Solo se aceptan fotos del servidor de imágenes de Open Food Facts: la app nunca
 // carga una dirección cualquiera que venga en los datos.
 const IMAGE_URL_PATTERN = /^https:\/\/images\.openfoodfacts\.org\/[^\s"'<>]+$/;
@@ -20,11 +21,13 @@ export type OpenFoodFactsProduct = {
   quantity?: string;
   /** Miniatura de 200 px del frente del producto. */
   image_front_small_url?: string;
+  /** La misma foto en 400 px. */
+  image_front_url?: string;
 };
 
-/** La foto del producto si es del servidor de imágenes de Open Food Facts; si no, null. */
-export function imageUrlOf(product: OpenFoodFactsProduct): string | null {
-  const url = product.image_front_small_url?.trim();
+/** La dirección si es del servidor de imágenes de Open Food Facts; si no, null. */
+export function safeImageUrl(value: string | undefined): string | null {
+  const url = value?.trim();
   return url && url.length <= MAX_IMAGE_URL_LENGTH && IMAGE_URL_PATTERN.test(url) ? url : null;
 }
 
@@ -82,6 +85,14 @@ export class OpenFoodFactsCatalog implements ExternalCatalog {
 
     const name = buildProductName(body.product);
     // Los productos con código de barras vienen empacados: se venden por unidad.
-    return name ? { name, unit: "UNIT", imageUrl: imageUrlOf(body.product) } : null;
+    if (!name) return null;
+    const imageUrl = safeImageUrl(body.product.image_front_small_url);
+    return {
+      name,
+      unit: "UNIT",
+      imageUrl,
+      // Sin miniatura no hay qué ampliar; sin foto grande, la app amplía la miniatura.
+      imageLargeUrl: imageUrl ? safeImageUrl(body.product.image_front_url) : null,
+    };
   }
 }

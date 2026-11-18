@@ -40,7 +40,7 @@ describe("SuggestProduct", () => {
       const { community, external, suggest } = setup();
       community.entry = arroz;
 
-      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, source: "COMMUNITY" });
+      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, imageLargeUrl: null, source: "COMMUNITY" });
       expect(community.calls).toEqual([
         { code: GTIN, excludeBusinessId: "business-1", minBusinesses: 3 },
       ]);
@@ -59,7 +59,7 @@ describe("SuggestProduct", () => {
       const { cache, external, suggest } = setup();
       external.entry = arroz;
 
-      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, source: "OPEN_FOOD_FACTS" });
+      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, imageLargeUrl: null, source: "OPEN_FOOD_FACTS" });
       expect(external.calls).toEqual([GTIN]);
       expect(cache.entries.get(GTIN)).toEqual({ entry: arroz, fetchedAt: now });
     });
@@ -67,17 +67,18 @@ describe("SuggestProduct", () => {
     it("should pass along the product photo from the public catalog and save it", async () => {
       const { cache, external, suggest } = setup();
       const photo = "https://images.openfoodfacts.org/images/products/770/200/400/3508/front_es.4.200.jpg";
-      external.entry = { ...arroz, imageUrl: photo };
+      const large = photo.replace(".200.", ".400.");
+      external.entry = { ...arroz, imageUrl: photo, imageLargeUrl: large };
 
-      expect(await suggest()).toEqual({ ...arroz, imageUrl: photo, source: "OPEN_FOOD_FACTS" });
-      expect(cache.entries.get(GTIN)?.entry).toEqual({ ...arroz, imageUrl: photo });
+      expect(await suggest()).toEqual({ ...arroz, imageUrl: photo, imageLargeUrl: large, source: "OPEN_FOOD_FACTS" });
+      expect(cache.entries.get(GTIN)?.entry).toEqual({ ...arroz, imageUrl: photo, imageLargeUrl: large });
     });
 
     it("should use a saved answer for 90 days without asking again", async () => {
       const { cache, external, suggest } = setup();
       cache.entries.set(GTIN, { entry: arroz, fetchedAt: daysAgo(89) });
 
-      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, source: "OPEN_FOOD_FACTS" });
+      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, imageLargeUrl: null, source: "OPEN_FOOD_FACTS" });
       expect(external.calls).toEqual([]);
     });
 
@@ -120,7 +121,7 @@ describe("SuggestProduct", () => {
       cache.entries.set(GTIN, old);
       external.error = new Error("timeout");
 
-      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, source: "OPEN_FOOD_FACTS" });
+      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, imageLargeUrl: null, source: "OPEN_FOOD_FACTS" });
       expect(cache.entries.get(GTIN)).toBe(old);
     });
 
@@ -130,7 +131,7 @@ describe("SuggestProduct", () => {
       cache.saveError = new Error("db");
       external.entry = arroz;
 
-      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, source: "OPEN_FOOD_FACTS" });
+      expect(await suggest()).toEqual({ ...arroz, imageUrl: null, imageLargeUrl: null, source: "OPEN_FOOD_FACTS" });
     });
 
     it("should log where each answer came from, without the code", async () => {
