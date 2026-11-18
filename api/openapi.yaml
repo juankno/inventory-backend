@@ -31,6 +31,8 @@ tags:
     description: Entradas, salidas y ajustes de existencias
   - name: Reports
     description: Resumen de ventas y reportes en Excel
+  - name: Catalog
+    description: Sugerencias para registrar un producto nuevo a partir de su código de barras
 
 paths:
   /health:
@@ -555,6 +557,75 @@ paths:
               example:
                 code: CODE_NOT_RECOGNIZED
                 message: Este código no corresponde a un producto de tu inventario.
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /catalog/{code}:
+    get:
+      tags: [Catalog]
+      summary: Sugiere el nombre y la unidad de un código de barras que no está en el inventario
+      description: |
+        Ayuda a registrar un producto nuevo sin escribir su nombre. La app la muestra como
+        una sugerencia que el usuario acepta o descarta: el mismo código puede ser de otro
+        producto.
+
+        - **Solo códigos de barras (GTIN)** con dígito de control válido. Los QR internos
+          `INV-` y cualquier otro contenido responden 404 sin consultar nada.
+        - **Primero, lo que usan otros negocios:** el nombre y la unidad que usan al menos
+          **3 negocios distintos** para ese código, sin contar el negocio del token ni los
+          productos eliminados. Los nombres se comparan sin mayúsculas ni espacios de más,
+          y se devuelve la forma de escribirlo más común. Con menos de 3 coincidencias no
+          se sugiere: así no se muestra el texto de un solo negocio, que puede llevar datos
+          propios, ni se revela qué vende un negocio en particular.
+        - **Si no, Open Food Facts:** la base pública https://world.openfoodfacts.org. El
+          nombre se arma con el nombre en español (o el general), la marca y el contenido.
+          Se espera como máximo 2,5 s; si no responde, se sigue como si no conociera el código.
+
+        Nunca devuelve precio, costo, existencias ni datos del negocio.
+      operationId: suggestProduct
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Código de barras leído, normalizado igual que al registrarlo.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 32
+          example: "7702004003508"
+      responses:
+        "200":
+          description: Sugerencia encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductSuggestion"
+              example:
+                name: Arroz Diana 500 g
+                unit: UNIT
+                source: COMMUNITY
+        "400":
+          description: "`VALIDATION_ERROR`: el código está vacío o tiene más de 32 caracteres."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                validationError:
+                  $ref: "#/components/examples/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: |
+            `SUGGESTION_NOT_FOUND`: no es un código de barras válido o nadie lo conoce. La app
+            sigue con el formulario vacío.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: SUGGESTION_NOT_FOUND
+                message: No tenemos datos de este código. Escribe el nombre del producto.
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1391,6 +1462,20 @@ components:
           type: string
           description: El GTIN enviado o el identificador interno `INV-XXXXXXXXXX` que va en el QR.
 
+    ProductSuggestion:
+      type: object
+      required: [name, unit, source]
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        unit:
+          $ref: "#/components/schemas/Unit"
+        source:
+          type: string
+          enum: [COMMUNITY, OPEN_FOOD_FACTS]
+          description: |
+            `COMMUNITY`: el nombre que usan varios negocios. `OPEN_FOOD_FACTS`: la base pública.
     Unit:
       type: string
       enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]
@@ -1570,6 +1655,7 @@ components:
             - CODE_OF_DELETED_PRODUCT
             - REPORT_TOO_LARGE
             - CODE_NOT_RECOGNIZED
+            - SUGGESTION_NOT_FOUND
             - PRODUCT_NOT_FOUND
             - INVALID_UNIT_CHANGE
             - INSUFFICIENT_STOCK

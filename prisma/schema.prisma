@@ -87,6 +87,8 @@ model Product {
 
   @@unique([businessId, code])
   @@index([businessId, isActive, name])
+  // Para sugerir el nombre de un código de barras nuevo con lo que usan otros negocios.
+  @@index([code])
   @@map("products")
 }
 

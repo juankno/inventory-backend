@@ -6,6 +6,10 @@ import {
   type AuthUseCases,
 } from "./modules/auth/presentation/auth.router.ts";
 import {
+  catalogRouter,
+  type CatalogUseCases,
+} from "./modules/catalog/presentation/catalog.router.ts";
+import {
   inventoryRouter,
   type InventoryUseCases,
 } from "./modules/inventory/presentation/inventory.router.ts";
@@ -34,6 +38,7 @@ export type AppDependencies = {
   movements: MovementsUseCases;
   inventory: InventoryUseCases;
   reports: ReportsUseCases;
+  catalog: CatalogUseCases;
 };
 
 export function createApp(deps: AppDependencies) {
@@ -55,6 +60,7 @@ export function createApp(deps: AppDependencies) {
   );
   api.use("/movements", deps.requireAuth, movementsRouter(deps.movements));
   api.use("/reports", deps.requireAuth, reportsRouter(deps.reports));
+  api.use("/catalog", deps.requireAuth, catalogRouter(deps.catalog));
   api.use(docsRouter());
 
   app.use("/api/v1", api);

@@ -18,6 +18,7 @@ beforeAll(async () => {
     movements: {},
     inventory: {},
     reports: {},
+    catalog: {},
   } as unknown as AppDependencies);
   await new Promise<void>((resolve) => {
     server = app.listen(0, () => resolve());
