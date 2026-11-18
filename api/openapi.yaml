@@ -579,7 +579,7 @@ paths:
           propios, ni se revela qué vende un negocio en particular.
         - **Si no, Open Food Facts:** la base pública https://world.openfoodfacts.org. El
           nombre se arma con el nombre en español (o el general), la marca y el contenido.
-          Se espera como máximo 1,5 s, sin reintentos.
+          Se espera como máximo 4 s, sin reintentos.
         - **Respuestas guardadas:** lo que responde Open Food Facts se guarda en
           `catalog_entries` y se reutiliza sin volver a consultarlo: 90 días si conocía el
           producto y 7 días si no lo conocía. Si Open Food Facts falla o tarda, no se guarda
@@ -1635,9 +1635,10 @@ components:
           type: [string, "null"]
           format: uri
           description: |
-            La misma foto en 400 px, para verla en pantalla completa. `null` si no hay
-            miniatura o Open Food Facts no tiene la foto grande; en ese caso la app amplía la
-            miniatura.
+            La misma foto en su tamaño original (`.full.jpg`), para verla en pantalla
+            completa: la de 400 px de Open Food Facts mide 400 px por el lado más largo y se ve
+            borrosa en un celular. `null` si no hay miniatura; en ese caso no hay nada que
+            ampliar.
     Unit:
       type: string
       enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]

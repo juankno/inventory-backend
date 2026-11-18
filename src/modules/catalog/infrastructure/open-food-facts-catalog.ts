@@ -8,9 +8,10 @@ const FIELDS =
 // carga una dirección cualquiera que venga en los datos.
 const IMAGE_URL_PATTERN = /^https:\/\/images\.openfoodfacts\.org\/[^\s"'<>]+$/;
 const MAX_IMAGE_URL_LENGTH = 500;
-// La pantalla de producto nuevo no debe quedarse esperando: si tarda, no hay sugerencia.
-// Responde en unos 0,5 s; más de 1,5 s es una falla, y se sigue sin sugerencia.
-const TIMEOUT_MS = 1500;
+// Suele responder en 0,5 s, pero a veces tarda más. La sugerencia no detiene la
+// pantalla de producto nuevo (se puede escribir mientras llega), así que se le da
+// margen; si pasa de 4 s, se sigue sin sugerencia.
+const TIMEOUT_MS = 4000;
 // Open Food Facts pide identificar la aplicación. No se envía nada del negocio.
 const USER_AGENT = "Surtido/0.1 (https://surtido-api.vercel.app)";
 const MAX_NAME_LENGTH = 80;
@@ -25,6 +26,15 @@ export type OpenFoodFactsProduct = {
   /** La misma foto en 400 px. */
   image_front_url?: string;
 };
+
+/**
+ * La foto en su tamaño original, para verla en pantalla completa. La "400" de Open Food
+ * Facts mide 400 px por el lado más largo y se ve borrosa en un celular. La original
+ * tiene la misma dirección que la miniatura, terminada en `.full.jpg`.
+ */
+export function fullSizeUrl(thumbnailUrl: string): string | null {
+  return /\.200\.jpg$/.test(thumbnailUrl) ? thumbnailUrl.replace(/\.200\.jpg$/, ".full.jpg") : null;
+}
 
 /** La dirección si es del servidor de imágenes de Open Food Facts; si no, null. */
 export function safeImageUrl(value: string | undefined): string | null {
@@ -92,8 +102,11 @@ export class OpenFoodFactsCatalog implements ExternalCatalog {
       name,
       unit: "UNIT",
       imageUrl,
-      // Sin miniatura no hay qué ampliar; sin foto grande, la app amplía la miniatura.
-      imageLargeUrl: imageUrl ? safeImageUrl(body.product.image_front_url) : null,
+      // Sin miniatura no hay qué ampliar. Si la miniatura no tiene la forma esperada, se
+      // usa la de 400 px; sin ninguna, la app amplía la miniatura.
+      imageLargeUrl: imageUrl
+        ? (fullSizeUrl(imageUrl) ?? safeImageUrl(body.product.image_front_url))
+        : null,
     };
   }
 }
