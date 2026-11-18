@@ -87,5 +87,11 @@ const staleEntry = (cached: CachedEntry | null): CatalogEntry | null => cached?.
 function respond(outcome: Outcome, entry: CatalogEntry | null): ProductSuggestion {
   console.info(`Sugerencia de producto: ${outcome}`);
   if (!entry) throw new AppError("SUGGESTION_NOT_FOUND");
-  return { ...entry, source: outcome === "COMMUNITY" ? "COMMUNITY" : "OPEN_FOOD_FACTS" };
+  return {
+    name: entry.name,
+    unit: entry.unit,
+    // Las sugerencias de otros negocios no traen foto.
+    imageUrl: entry.imageUrl ?? null,
+    source: outcome === "COMMUNITY" ? "COMMUNITY" : "OPEN_FOOD_FACTS",
+  };
 }
