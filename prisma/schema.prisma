@@ -121,6 +121,19 @@ model Movement {
   @@map("movements")
 }
 
+// Respuestas de la base pública de productos (Open Food Facts) guardadas para no
+// consultarla cada vez. Solo datos públicos: nada de ningún negocio. Sin nombre ni
+// unidad, la base pública no conocía el código.
+model CatalogEntry {
+  code      String   @id @db.VarChar(32)
+  name      String?  @db.VarChar(80)
+  unit      Unit?
+  source    String   @db.VarChar(20)
+  fetchedAt DateTime @map("fetched_at")
+
+  @@map("catalog_entries")
+}
+
 // Intentos fallidos de inicio de sesión. Va en la base de datos porque en Vercel
 // cada petición puede caer en una instancia distinta. Se guarda el hash del correo
 // para no conservar correos de quienes no tienen cuenta.

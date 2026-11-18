@@ -23,3 +23,23 @@ export interface ProductSuggestion extends CatalogEntry {
  * llevar datos propios) ni se revela qué vende un negocio en particular.
  */
 export const MIN_BUSINESSES_FOR_SUGGESTION = 3;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Cuánto sirve una respuesta guardada de la base pública antes de volver a consultarla. */
+export const FOUND_TTL_DAYS = 90;
+/**
+ * Un código que la base pública no conoce se vuelve a consultar antes, por si
+ * alguien lo agrega.
+ */
+export const NOT_FOUND_TTL_DAYS = 7;
+
+/** Respuesta guardada de la base pública: `entry` es null si no conocía el código. */
+export interface CachedEntry {
+  entry: CatalogEntry | null;
+  fetchedAt: Date;
+}
+
+export const isFresh = ({ entry, fetchedAt }: CachedEntry, now: Date): boolean =>
+  now.getTime() - fetchedAt.getTime() <
+  (entry ? FOUND_TTL_DAYS : NOT_FOUND_TTL_DAYS) * DAY_MS;

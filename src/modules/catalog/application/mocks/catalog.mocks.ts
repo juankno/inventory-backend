@@ -1,4 +1,5 @@
-import type { CatalogEntry } from "../../domain/product-suggestion.model.ts";
+import type { CachedEntry, CatalogEntry } from "../../domain/product-suggestion.model.ts";
+import type { CatalogCache } from "../ports/catalog-cache.port.ts";
 import type { CommunityCatalog } from "../ports/community-catalog.port.ts";
 import type { ExternalCatalog } from "../ports/external-catalog.port.ts";
 
@@ -25,5 +26,21 @@ export class ExternalCatalogMock implements ExternalCatalog {
     this.calls.push(code);
     if (this.error) throw this.error;
     return this.entry;
+  }
+}
+
+export class CatalogCacheMock implements CatalogCache {
+  readonly entries = new Map<string, CachedEntry>();
+  findError: Error | null = null;
+  saveError: Error | null = null;
+
+  async find(code: string): Promise<CachedEntry | null> {
+    if (this.findError) throw this.findError;
+    return this.entries.get(code) ?? null;
+  }
+
+  async save(code: string, entry: CatalogEntry | null, fetchedAt: Date): Promise<void> {
+    if (this.saveError) throw this.saveError;
+    this.entries.set(code, { entry, fetchedAt });
   }
 }
