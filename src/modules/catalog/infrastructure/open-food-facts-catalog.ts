@@ -9,7 +9,8 @@ const FIELDS =
 const IMAGE_URL_PATTERN = /^https:\/\/images\.openfoodfacts\.org\/[^\s"'<>]+$/;
 const MAX_IMAGE_URL_LENGTH = 500;
 // La pantalla de producto nuevo no debe quedarse esperando: si tarda, no hay sugerencia.
-const TIMEOUT_MS = 2500;
+// Responde en unos 0,5 s; más de 1,5 s es una falla, y se sigue sin sugerencia.
+const TIMEOUT_MS = 1500;
 // Open Food Facts pide identificar la aplicación. No se envía nada del negocio.
 const USER_AGENT = "Surtido/0.1 (https://surtido-api.vercel.app)";
 const MAX_NAME_LENGTH = 80;

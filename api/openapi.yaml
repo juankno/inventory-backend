@@ -579,7 +579,7 @@ paths:
           propios, ni se revela qué vende un negocio en particular.
         - **Si no, Open Food Facts:** la base pública https://world.openfoodfacts.org. El
           nombre se arma con el nombre en español (o el general), la marca y el contenido.
-          Se espera como máximo 2,5 s.
+          Se espera como máximo 1,5 s, sin reintentos.
         - **Respuestas guardadas:** lo que responde Open Food Facts se guarda en
           `catalog_entries` y se reutiliza sin volver a consultarlo: 90 días si conocía el
           producto y 7 días si no lo conocía. Si Open Food Facts falla o tarda, no se guarda
