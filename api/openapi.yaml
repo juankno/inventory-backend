@@ -577,10 +577,13 @@ paths:
           y se devuelve la forma de escribirlo más común. Con menos de 3 coincidencias no
           se sugiere: así no se muestra el texto de un solo negocio, que puede llevar datos
           propios, ni se revela qué vende un negocio en particular.
-        - **Si no, Open Food Facts:** la base pública https://world.openfoodfacts.org. El
-          nombre se arma con el nombre en español (o el general), la marca y el contenido.
-          Se espera como máximo 4 s, sin reintentos.
-        - **Respuestas guardadas:** lo que responde Open Food Facts se guarda en
+        - **Si no, las bases públicas:** Open Food Facts (alimentos,
+          https://world.openfoodfacts.org) y Open Beauty Facts (cuidado personal y cosméticos,
+          https://world.openbeautyfacts.org), consultadas a la vez. Si las dos lo conocen, se
+          prefiere Open Food Facts. El nombre se arma con el nombre en español (o el general),
+          la marca y el contenido. Se espera como máximo 4 s, sin reintentos. Si ninguna lo
+          conoce pero alguna falló, no se guarda como "no encontrado".
+        - **Respuestas guardadas:** lo que responden las bases públicas se guarda en
           `catalog_entries` y se reutiliza sin volver a consultarlo: 90 días si conocía el
           producto y 7 días si no lo conocía. Si Open Food Facts falla o tarda, no se guarda
           nada y se responde con lo guardado aunque esté vencido; si no hay nada guardado,
@@ -1621,9 +1624,10 @@ components:
           $ref: "#/components/schemas/Unit"
         source:
           type: string
-          enum: [COMMUNITY, OPEN_FOOD_FACTS]
+          enum: [COMMUNITY, OPEN_FOOD_FACTS, OPEN_BEAUTY_FACTS]
           description: |
-            `COMMUNITY`: el nombre que usan varios negocios. `OPEN_FOOD_FACTS`: la base pública.
+            `COMMUNITY`: el nombre que usan varios negocios. `OPEN_FOOD_FACTS`: la base pública
+            de alimentos. `OPEN_BEAUTY_FACTS`: la base pública de cuidado personal y cosméticos.
         imageUrl:
           type: [string, "null"]
           format: uri

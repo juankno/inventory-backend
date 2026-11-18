@@ -12,7 +12,12 @@ import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-r
 import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
 import { SuggestProduct } from "./modules/catalog/application/use-cases/suggest-product/suggest-product.use-case.ts";
 import { PrismaCatalogCache } from "./modules/catalog/infrastructure/prisma-catalog-cache.ts";
-import { OpenFoodFactsCatalog } from "./modules/catalog/infrastructure/open-food-facts-catalog.ts";
+import {
+  FirstMatchCatalog,
+  OPEN_BEAUTY_FACTS,
+  OPEN_FOOD_FACTS,
+  OpenFactsCatalog,
+} from "./modules/catalog/infrastructure/open-facts-catalog.ts";
 import { PrismaCommunityCatalog } from "./modules/catalog/infrastructure/prisma-community-catalog.ts";
 import { GetLowStockAlerts } from "./modules/inventory/application/use-cases/get-low-stock-alerts/get-low-stock-alerts.use-case.ts";
 import { GetMovementHistory } from "./modules/inventory/application/use-cases/get-movement-history/get-movement-history.use-case.ts";
@@ -126,7 +131,11 @@ export function buildDependencies(config: Config): AppDependencies {
       suggestProduct: new SuggestProduct(
         new PrismaCommunityCatalog(prisma),
         new PrismaCatalogCache(prisma),
-        new OpenFoodFactsCatalog(),
+        // Alimentos primero; si no, cuidado personal y cosméticos.
+        new FirstMatchCatalog([
+          new OpenFactsCatalog(OPEN_FOOD_FACTS),
+          new OpenFactsCatalog(OPEN_BEAUTY_FACTS),
+        ]),
       ),
     },
   };

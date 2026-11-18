@@ -15,10 +15,10 @@ function setup(row: unknown = null) {
 describe("PrismaCatalogCache", () => {
   it("should read a saved product", async () => {
     const imageUrl = "https://images.openfoodfacts.org/images/products/770/200/400/3508/front_es.4.200.jpg";
-    const { cache } = setup({ code: "7702004003508", name: "Arroz Diana 500 g", unit: "UNIT", imageUrl, imageLargeUrl: null, fetchedAt });
+    const { cache } = setup({ code: "7702004003508", name: "Arroz Diana 500 g", unit: "UNIT", imageUrl, imageLargeUrl: null, source: "OPEN_BEAUTY_FACTS", fetchedAt });
 
     expect(await cache.find("7702004003508")).toEqual({
-      entry: { name: "Arroz Diana 500 g", unit: "UNIT", imageUrl, imageLargeUrl: null },
+      entry: { name: "Arroz Diana 500 g", unit: "UNIT", imageUrl, imageLargeUrl: null, source: "OPEN_BEAUTY_FACTS" },
       fetchedAt,
     });
   });
@@ -33,6 +33,20 @@ describe("PrismaCatalogCache", () => {
     const { cache } = setup(null);
 
     expect(await cache.find("7702004003508")).toBeNull();
+  });
+
+  it("should treat an unknown source as Open Food Facts", async () => {
+    const { cache } = setup({ code: "1", name: "A", unit: "UNIT", imageUrl: null, imageLargeUrl: null, source: "OTRA", fetchedAt });
+
+    expect((await cache.find("1"))?.entry?.source).toBe("OPEN_FOOD_FACTS");
+  });
+
+  it("should save the base that knew the product", async () => {
+    const { upsert, cache } = setup();
+
+    await cache.save("1", { name: "Champú", unit: "UNIT", source: "OPEN_BEAUTY_FACTS" }, fetchedAt);
+
+    expect(upsert.mock.calls[0]![0]).toMatchObject({ create: { source: "OPEN_BEAUTY_FACTS" } });
   });
 
   it("should save or replace the answer", async () => {

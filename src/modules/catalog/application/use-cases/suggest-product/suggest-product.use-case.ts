@@ -6,6 +6,7 @@ import {
   type CachedEntry,
   type CatalogEntry,
   type ProductSuggestion,
+  type PublicSource,
 } from "../../../domain/product-suggestion.model.ts";
 import type { CatalogCache } from "../../ports/catalog-cache.port.ts";
 import type { CommunityCatalog } from "../../ports/community-catalog.port.ts";
@@ -17,7 +18,7 @@ export interface SuggestProductInput {
 }
 
 /** De dónde salió la respuesta, para medir la cobertura en los logs. */
-type Outcome = "COMMUNITY" | "CACHE" | "OPEN_FOOD_FACTS" | "NOT_FOUND" | "EXTERNAL_ERROR";
+type Outcome = "COMMUNITY" | "CACHE" | PublicSource | "NOT_FOUND" | "EXTERNAL_ERROR";
 
 /**
  * Sugiere el nombre y la unidad de un producto nuevo a partir de su código de barras,
@@ -73,7 +74,7 @@ export class SuggestProduct {
     await this.cache.save(code, entry, now).catch((error: unknown) => {
       console.warn("No se pudo guardar la respuesta de la base pública", error);
     });
-    return respond(entry ? "OPEN_FOOD_FACTS" : "NOT_FOUND", entry);
+    return respond(entry ? (entry.source ?? "OPEN_FOOD_FACTS") : "NOT_FOUND", entry);
   }
 }
 
@@ -81,8 +82,8 @@ export class SuggestProduct {
 const staleEntry = (cached: CachedEntry | null): CatalogEntry | null => cached?.entry ?? null;
 
 /**
- * Deja en el log de dónde salió la respuesta (sin el código) y responde. Lo guardado
- * viene de la base pública, así que se responde con esa fuente.
+ * Deja en el log de dónde salió la respuesta (sin el código) y responde con la base
+ * pública que conocía el producto.
  */
 function respond(outcome: Outcome, entry: CatalogEntry | null): ProductSuggestion {
   console.info(`Sugerencia de producto: ${outcome}`);
@@ -93,6 +94,7 @@ function respond(outcome: Outcome, entry: CatalogEntry | null): ProductSuggestio
     // Las sugerencias de otros negocios no traen foto.
     imageUrl: entry.imageUrl ?? null,
     imageLargeUrl: entry.imageLargeUrl ?? null,
-    source: outcome === "COMMUNITY" ? "COMMUNITY" : "OPEN_FOOD_FACTS",
+    // Lo de otros negocios no trae base pública; lo guardado conserva la suya.
+    source: outcome === "COMMUNITY" ? "COMMUNITY" : (entry.source ?? "OPEN_FOOD_FACTS"),
   };
 }

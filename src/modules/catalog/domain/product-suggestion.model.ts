@@ -1,11 +1,19 @@
 import type { Unit } from "../../../shared/domain/quantity.ts";
 
 /**
- * De dónde sale la sugerencia:
- * - COMMUNITY: el nombre que usan varios negocios para ese código de barras.
- * - OPEN_FOOD_FACTS: la base pública de productos https://world.openfoodfacts.org.
+ * Bases públicas que se consultan:
+ * - OPEN_FOOD_FACTS: alimentos y bebidas, https://world.openfoodfacts.org.
+ * - OPEN_BEAUTY_FACTS: cuidado personal y cosméticos, https://world.openbeautyfacts.org.
  */
-export type SuggestionSource = "COMMUNITY" | "OPEN_FOOD_FACTS";
+export type PublicSource = "OPEN_FOOD_FACTS" | "OPEN_BEAUTY_FACTS";
+
+export const PUBLIC_SOURCES: readonly PublicSource[] = ["OPEN_FOOD_FACTS", "OPEN_BEAUTY_FACTS"];
+
+/**
+ * De dónde sale la sugerencia: COMMUNITY es el nombre que usan varios negocios para ese
+ * código de barras; las demás, la base pública que lo conocía.
+ */
+export type SuggestionSource = "COMMUNITY" | PublicSource;
 
 /** Solo datos que no son privados de ningún negocio: nunca precio, costo ni existencias. */
 export interface CatalogEntry {
@@ -16,11 +24,13 @@ export interface CatalogEntry {
    * el código es de ese producto; no se guarda en el inventario.
    */
   imageUrl?: string | null;
-  /** La misma foto en 400 px, para verla en pantalla completa. */
+  /** La misma foto en tamaño original, para verla en pantalla completa. */
   imageLargeUrl?: string | null;
+  /** Qué base pública lo conocía. Sin ella, es lo que usan otros negocios. */
+  source?: PublicSource;
 }
 
-export interface ProductSuggestion extends CatalogEntry {
+export interface ProductSuggestion extends Omit<CatalogEntry, "source"> {
   source: SuggestionSource;
   imageUrl: string | null;
   imageLargeUrl: string | null;
