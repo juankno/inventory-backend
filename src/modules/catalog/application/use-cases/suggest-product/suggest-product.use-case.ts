@@ -27,8 +27,8 @@ type Outcome = "COMMUNITY" | "CACHE" | PublicSource | "NOT_FOUND" | "EXTERNAL_ER
  * Solo aplica a códigos de barras (GTIN). Los QR internos `INV-` son de cada negocio.
  * El orden es:
  * 1. Lo que usan otros negocios.
- * 2. La respuesta guardada de la base pública, si sigue vigente.
- * 3. La base pública. Lo que responde se guarda, también si no conoce el código.
+ * 2. La respuesta guardada de las bases públicas, si sigue vigente.
+ * 3. Las bases públicas. Lo que responden se guarda, también si ninguna conoce el código.
  *    Si falla, no se guarda nada y se usa la respuesta guardada aunque esté vencida:
  *    registrar el producto no puede depender de un servicio externo.
  *
@@ -67,18 +67,18 @@ export class SuggestProduct {
     try {
       entry = await this.external.findByGtin(code);
     } catch (error) {
-      console.warn("No se pudo consultar la base pública de productos", error);
+      console.warn("No se pudieron consultar las bases públicas de productos", error);
       return respond("EXTERNAL_ERROR", staleEntry(cached));
     }
 
     await this.cache.save(code, entry, now).catch((error: unknown) => {
-      console.warn("No se pudo guardar la respuesta de la base pública", error);
+      console.warn("No se pudo guardar la respuesta de las bases públicas", error);
     });
     return respond(entry ? (entry.source ?? "OPEN_FOOD_FACTS") : "NOT_FOUND", entry);
   }
 }
 
-/** Un nombre de hace meses es mejor que ninguno cuando la base pública no responde. */
+/** Un nombre de hace meses es mejor que ninguno cuando las bases públicas no responden. */
 const staleEntry = (cached: CachedEntry | null): CatalogEntry | null => cached?.entry ?? null;
 
 /**
