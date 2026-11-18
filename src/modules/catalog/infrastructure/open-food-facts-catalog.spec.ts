@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 
-import { buildProductName, OpenFoodFactsCatalog } from "./open-food-facts-catalog.ts";
+import { buildProductName, imageUrlOf, OpenFoodFactsCatalog } from "./open-food-facts-catalog.ts";
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -44,6 +44,24 @@ describe("buildProductName", () => {
   });
 });
 
+describe("imageUrlOf", () => {
+  const photo = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.200.jpg";
+
+  it("should accept a photo from the Open Food Facts image server", () => {
+    expect(imageUrlOf({ image_front_small_url: photo })).toBe(photo);
+  });
+
+  it.each([
+    ["no photo", undefined],
+    ["another server", "https://example.com/front.jpg"],
+    ["plain http", photo.replace("https:", "http:")],
+    ["a look-alike domain", "https://images.openfoodfacts.org.example.com/front.jpg"],
+    ["a quote that breaks the address", `${photo}"onerror="x`],
+  ])("should reject %s", (_case, url) => {
+    expect(imageUrlOf({ image_front_small_url: url })).toBeNull();
+  });
+});
+
 describe("OpenFoodFactsCatalog", () => {
   it("should return the product sold by unit", async () => {
     const { fetchFn, catalog } = setup(
@@ -52,9 +70,10 @@ describe("OpenFoodFactsCatalog", () => {
 
     const entry = await catalog.findByGtin("7702004003508");
 
-    expect(entry).toEqual({ name: "Arroz Diana 500 g", unit: "UNIT" });
+    expect(entry).toEqual({ name: "Arroz Diana 500 g", unit: "UNIT", imageUrl: null });
     const [url, init] = fetchFn.mock.calls[0]!;
     expect(url).toContain("/api/v2/product/7702004003508.json");
+    expect(url).toContain("image_front_small_url");
     expect((init?.headers as Record<string, string>)["User-Agent"]).toMatch(/^Surtido\//);
   });
 

@@ -11,12 +11,19 @@ export class PrismaCatalogCache implements CatalogCache {
     const row = await this.prisma.catalogEntry.findUnique({ where: { code } });
     if (!row) return null;
     // Sin nombre o sin unidad, la base pública no conocía el código.
-    const entry = row.name && row.unit ? { name: row.name, unit: row.unit } : null;
+    const entry =
+      row.name && row.unit ? { name: row.name, unit: row.unit, imageUrl: row.imageUrl } : null;
     return { entry, fetchedAt: row.fetchedAt };
   }
 
   async save(code: string, entry: CatalogEntry | null, fetchedAt: Date): Promise<void> {
-    const data = { name: entry?.name ?? null, unit: entry?.unit ?? null, source: SOURCE, fetchedAt };
+    const data = {
+      name: entry?.name ?? null,
+      unit: entry?.unit ?? null,
+      imageUrl: entry?.imageUrl ?? null,
+      source: SOURCE,
+      fetchedAt,
+    };
     await this.prisma.catalogEntry.upsert({
       where: { code },
       create: { code, ...data },

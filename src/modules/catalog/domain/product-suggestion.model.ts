@@ -11,10 +11,16 @@ export type SuggestionSource = "COMMUNITY" | "OPEN_FOOD_FACTS";
 export interface CatalogEntry {
   name: string;
   unit: Unit;
+  /**
+   * Foto del frente del producto, solo de la base pública. Sirve para confirmar que
+   * el código es de ese producto; no se guarda en el inventario.
+   */
+  imageUrl?: string | null;
 }
 
 export interface ProductSuggestion extends CatalogEntry {
   source: SuggestionSource;
+  imageUrl: string | null;
 }
 
 /**

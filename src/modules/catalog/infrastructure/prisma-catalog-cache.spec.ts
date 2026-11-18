@@ -14,16 +14,17 @@ function setup(row: unknown = null) {
 
 describe("PrismaCatalogCache", () => {
   it("should read a saved product", async () => {
-    const { cache } = setup({ code: "7702004003508", name: "Arroz Diana 500 g", unit: "UNIT", fetchedAt });
+    const imageUrl = "https://images.openfoodfacts.org/images/products/770/200/400/3508/front_es.4.200.jpg";
+    const { cache } = setup({ code: "7702004003508", name: "Arroz Diana 500 g", unit: "UNIT", imageUrl, fetchedAt });
 
     expect(await cache.find("7702004003508")).toEqual({
-      entry: { name: "Arroz Diana 500 g", unit: "UNIT" },
+      entry: { name: "Arroz Diana 500 g", unit: "UNIT", imageUrl },
       fetchedAt,
     });
   });
 
   it("should read a code the public catalog did not know", async () => {
-    const { cache } = setup({ code: "7702004003508", name: null, unit: null, fetchedAt });
+    const { cache } = setup({ code: "7702004003508", name: null, unit: null, imageUrl: null, fetchedAt });
 
     expect(await cache.find("7702004003508")).toEqual({ entry: null, fetchedAt });
   });
@@ -43,13 +44,13 @@ describe("PrismaCatalogCache", () => {
     expect(upsert.mock.calls.map(([args]) => args)).toEqual([
       {
         where: { code: "7702004003508" },
-        create: { code: "7702004003508", name: "Arroz Diana 500 g", unit: "UNIT", source: "OPEN_FOOD_FACTS", fetchedAt },
-        update: { name: "Arroz Diana 500 g", unit: "UNIT", source: "OPEN_FOOD_FACTS", fetchedAt },
+        create: { code: "7702004003508", name: "Arroz Diana 500 g", unit: "UNIT", imageUrl: null, source: "OPEN_FOOD_FACTS", fetchedAt },
+        update: { name: "Arroz Diana 500 g", unit: "UNIT", imageUrl: null, source: "OPEN_FOOD_FACTS", fetchedAt },
       },
       {
         where: { code: "7702004003515" },
-        create: { code: "7702004003515", name: null, unit: null, source: "OPEN_FOOD_FACTS", fetchedAt },
-        update: { name: null, unit: null, source: "OPEN_FOOD_FACTS", fetchedAt },
+        create: { code: "7702004003515", name: null, unit: null, imageUrl: null, source: "OPEN_FOOD_FACTS", fetchedAt },
+        update: { name: null, unit: null, imageUrl: null, source: "OPEN_FOOD_FACTS", fetchedAt },
       },
     ]);
   });
