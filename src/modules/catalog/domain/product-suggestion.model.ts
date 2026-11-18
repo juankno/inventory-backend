@@ -16,11 +16,14 @@ export interface CatalogEntry {
    * el código es de ese producto; no se guarda en el inventario.
    */
   imageUrl?: string | null;
+  /** La misma foto en 400 px, para verla en pantalla completa. */
+  imageLargeUrl?: string | null;
 }
 
 export interface ProductSuggestion extends CatalogEntry {
   source: SuggestionSource;
   imageUrl: string | null;
+  imageLargeUrl: string | null;
 }
 
 /**

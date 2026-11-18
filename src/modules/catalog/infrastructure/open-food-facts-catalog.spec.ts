@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 
-import { buildProductName, imageUrlOf, OpenFoodFactsCatalog } from "./open-food-facts-catalog.ts";
+import { buildProductName, OpenFoodFactsCatalog, safeImageUrl } from "./open-food-facts-catalog.ts";
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -44,11 +44,11 @@ describe("buildProductName", () => {
   });
 });
 
-describe("imageUrlOf", () => {
+describe("safeImageUrl", () => {
   const photo = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.200.jpg";
 
   it("should accept a photo from the Open Food Facts image server", () => {
-    expect(imageUrlOf({ image_front_small_url: photo })).toBe(photo);
+    expect(safeImageUrl(photo)).toBe(photo);
   });
 
   it.each([
@@ -58,7 +58,7 @@ describe("imageUrlOf", () => {
     ["a look-alike domain", "https://images.openfoodfacts.org.example.com/front.jpg"],
     ["a quote that breaks the address", `${photo}"onerror="x`],
   ])("should reject %s", (_case, url) => {
-    expect(imageUrlOf({ image_front_small_url: url })).toBeNull();
+    expect(safeImageUrl(url)).toBeNull();
   });
 });
 
@@ -70,11 +70,34 @@ describe("OpenFoodFactsCatalog", () => {
 
     const entry = await catalog.findByGtin("7702004003508");
 
-    expect(entry).toEqual({ name: "Arroz Diana 500 g", unit: "UNIT", imageUrl: null });
+    expect(entry).toEqual({ name: "Arroz Diana 500 g", unit: "UNIT", imageUrl: null, imageLargeUrl: null });
     const [url, init] = fetchFn.mock.calls[0]!;
     expect(url).toContain("/api/v2/product/7702004003508.json");
     expect(url).toContain("image_front_small_url");
+    expect(url).toContain("image_front_url");
     expect((init?.headers as Record<string, string>)["User-Agent"]).toMatch(/^Surtido\//);
+  });
+
+  it("should return the thumbnail and the large photo", async () => {
+    const small = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.200.jpg";
+    const large = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.400.jpg";
+    const { catalog } = setup(
+      jsonResponse(200, {
+        status: 1,
+        product: { product_name: "Refisal sal", image_front_small_url: small, image_front_url: large },
+      }),
+    );
+
+    expect(await catalog.findByGtin("7703812004862")).toMatchObject({ imageUrl: small, imageLargeUrl: large });
+  });
+
+  it("should not return a large photo without a thumbnail", async () => {
+    const large = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.400.jpg";
+    const { catalog } = setup(
+      jsonResponse(200, { status: 1, product: { product_name: "Refisal sal", image_front_url: large } }),
+    );
+
+    expect(await catalog.findByGtin("7703812004862")).toMatchObject({ imageUrl: null, imageLargeUrl: null });
   });
 
   it("should return null when the code is unknown", async () => {

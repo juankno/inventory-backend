@@ -579,7 +579,7 @@ paths:
           propios, ni se revela qué vende un negocio en particular.
         - **Si no, Open Food Facts:** la base pública https://world.openfoodfacts.org. El
           nombre se arma con el nombre en español (o el general), la marca y el contenido.
-          Se espera como máximo 2,5 s.
+          Se espera como máximo 1,5 s, sin reintentos.
         - **Respuestas guardadas:** lo que responde Open Food Facts se guarda en
           `catalog_entries` y se reutiliza sin volver a consultarlo: 90 días si conocía el
           producto y 7 días si no lo conocía. Si Open Food Facts falla o tarda, no se guarda
@@ -610,6 +610,7 @@ paths:
                 unit: UNIT
                 source: COMMUNITY
                 imageUrl: null
+                imageLargeUrl: null
         "400":
           description: "`VALIDATION_ERROR`: el código está vacío o tiene más de 32 caracteres."
           content:
@@ -1611,7 +1612,7 @@ components:
 
     ProductSuggestion:
       type: object
-      required: [name, unit, source, imageUrl]
+      required: [name, unit, source, imageUrl, imageLargeUrl]
       properties:
         name:
           type: string
@@ -1630,6 +1631,13 @@ components:
             Miniatura (200 px) del frente del producto en `https://images.openfoodfacts.org`,
             para confirmar que el código es de ese producto. Solo en sugerencias de Open Food
             Facts que tengan foto; si no, `null`. No se guarda en el inventario.
+        imageLargeUrl:
+          type: [string, "null"]
+          format: uri
+          description: |
+            La misma foto en 400 px, para verla en pantalla completa. `null` si no hay
+            miniatura o Open Food Facts no tiene la foto grande; en ese caso la app amplía la
+            miniatura.
     Unit:
       type: string
       enum: [UNIT, KILOGRAM, GRAM, POUND, LITER]

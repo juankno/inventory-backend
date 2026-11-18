@@ -92,6 +92,7 @@ function respond(outcome: Outcome, entry: CatalogEntry | null): ProductSuggestio
     unit: entry.unit,
     // Las sugerencias de otros negocios no traen foto.
     imageUrl: entry.imageUrl ?? null,
+    imageLargeUrl: entry.imageLargeUrl ?? null,
     source: outcome === "COMMUNITY" ? "COMMUNITY" : "OPEN_FOOD_FACTS",
   };
 }

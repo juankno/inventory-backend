@@ -12,7 +12,9 @@ export class PrismaCatalogCache implements CatalogCache {
     if (!row) return null;
     // Sin nombre o sin unidad, la base pública no conocía el código.
     const entry =
-      row.name && row.unit ? { name: row.name, unit: row.unit, imageUrl: row.imageUrl } : null;
+      row.name && row.unit
+        ? { name: row.name, unit: row.unit, imageUrl: row.imageUrl, imageLargeUrl: row.imageLargeUrl }
+        : null;
     return { entry, fetchedAt: row.fetchedAt };
   }
 
@@ -21,6 +23,7 @@ export class PrismaCatalogCache implements CatalogCache {
       name: entry?.name ?? null,
       unit: entry?.unit ?? null,
       imageUrl: entry?.imageUrl ?? null,
+      imageLargeUrl: entry?.imageLargeUrl ?? null,
       source: SOURCE,
       fetchedAt,
     };
