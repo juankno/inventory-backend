@@ -6,16 +6,18 @@ import type {
   GenerateMovementsReport,
   GenerateSalesReport,
 } from "../application/use-cases/generate-reports.use-case.ts";
+import type { GetSalesOverview } from "../application/use-cases/get-sales-overview.use-case.ts";
 import type { GetSalesSummary } from "../application/use-cases/get-sales-summary.use-case.ts";
 import { toBogotaClock } from "../domain/report-period.ts";
 import type { RenderedReport } from "../domain/report.model.ts";
-import { reportPeriodSchema } from "./reports.schemas.ts";
+import { overviewQuerySchema, reportPeriodSchema } from "./reports.schemas.ts";
 
 export type ReportsUseCases = {
   generateInventoryReport: GenerateInventoryReport;
   generateMovementsReport: GenerateMovementsReport;
   generateSalesReport: GenerateSalesReport;
   getSalesSummary: GetSalesSummary;
+  getSalesOverview: GetSalesOverview;
 };
 
 const XLSX_TYPE =
@@ -34,12 +36,23 @@ export const reportsRouter = ({
   generateMovementsReport,
   generateSalesReport,
   getSalesSummary,
+  getSalesOverview,
 }: ReportsUseCases): Router => {
   const router = Router();
 
   router.get("/summary", async (_req, res) => {
     const { businessId } = res.locals.auth;
     res.status(200).json(await getSalesSummary.execute(businessId));
+  });
+
+  router.get("/overview", async (req, res) => {
+    const { compareFrom, compareTo, ...period } = validate(overviewQuerySchema, req.query);
+    const { businessId } = res.locals.auth;
+    const compare =
+      compareFrom && compareTo ? { from: compareFrom, to: compareTo } : undefined;
+    res
+      .status(200)
+      .json(await getSalesOverview.execute({ businessId, ...period, compare }));
   });
 
   router.get("/inventory", async (_req, res) => {

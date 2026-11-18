@@ -30,6 +30,7 @@ import {
   GenerateMovementsReport,
   GenerateSalesReport,
 } from "./modules/reports/application/use-cases/generate-reports.use-case.ts";
+import { GetSalesOverview } from "./modules/reports/application/use-cases/get-sales-overview.use-case.ts";
 import { GetSalesSummary } from "./modules/reports/application/use-cases/get-sales-summary.use-case.ts";
 import { ExcelReportRenderer } from "./modules/reports/infrastructure/excel-report-renderer.ts";
 import { PrismaReportQueries } from "./modules/reports/infrastructure/prisma-report-queries.repository.ts";
@@ -115,6 +116,7 @@ export function buildDependencies(config: Config): AppDependencies {
       ),
       generateSalesReport: new GenerateSalesReport(reportQueries, reportRenderer),
       getSalesSummary: new GetSalesSummary(reportQueries),
+      getSalesOverview: new GetSalesOverview(reportQueries),
     },
   };
 }
