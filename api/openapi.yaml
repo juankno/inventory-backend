@@ -1154,6 +1154,62 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /reports/overview:
+    get:
+      tags: [Reports]
+      summary: Resumen de ventas de un período, con comparación y datos para gráficos
+      description: |
+        Lo que muestra la pantalla de reportes para el período elegido, en hora de Colombia:
+
+        - `current`: total, número de ventas y ganancia del período.
+        - `previous`: lo mismo para el período con que se compara. La app lo envía en
+          `compareFrom` y `compareTo` (por ejemplo, los mismos días del mes pasado). Sin ellos,
+          es el período del mismo largo justo antes de `from`.
+        - `series`: las ventas repartidas en el tiempo, con todos los grupos aunque no tengan
+          ventas. `granularity` dice cómo se agrupan: `HOUR` si es un solo día (24 grupos,
+          `start` = `AAAA-MM-DDTHH`), `DAY` hasta 31 días, `WEEK` hasta 92 días (semanas que
+          empiezan el lunes) y `MONTH` para períodos más largos. Un grupo que empezaría antes
+          de `from` empieza en `from`.
+        - `topProducts`: los 5 más vendidos del período, por valor y luego por cantidad.
+        - `inventory`: cuántos productos activos hay hoy, cuántos por agotarse y cuántos
+          agotados. No depende del período.
+
+        El total y la ganancia siguen las mismas reglas que `/reports/summary`: usan el precio
+        y el costo guardados en cada venta, y las ventas deshechas no cuentan.
+      operationId: getSalesOverview
+      parameters:
+        - $ref: "#/components/parameters/ReportFrom"
+        - $ref: "#/components/parameters/ReportTo"
+        - name: compareFrom
+          in: query
+          required: false
+          description: Primer día del período con que se compara. Va junto con `compareTo`.
+          schema:
+            type: string
+            format: date
+          example: "2026-10-01"
+        - name: compareTo
+          in: query
+          required: false
+          description: Último día del período con que se compara. Va junto con `compareFrom`.
+          schema:
+            type: string
+            format: date
+          example: "2026-10-18"
+      responses:
+        "200":
+          description: El resumen del período.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalesOverview"
+        "400":
+          $ref: "#/components/responses/InvalidReportPeriod"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /reports/inventory:
     get:
       tags: [Reports]
@@ -1263,6 +1319,91 @@ components:
         sales:
           type: integer
           description: Número de ventas.
+
+    SalesOverview:
+      type: object
+      required:
+        [from, to, current, previous, granularity, series, topProducts, salesWithoutPrice, salesWithoutCost, inventory]
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        current:
+          $ref: "#/components/schemas/PeriodSales"
+        previous:
+          allOf:
+            - $ref: "#/components/schemas/PeriodSales"
+            - type: object
+              required: [from, to]
+              properties:
+                from:
+                  type: string
+                  format: date
+                to:
+                  type: string
+                  format: date
+        granularity:
+          type: string
+          enum: [HOUR, DAY, WEEK, MONTH]
+        series:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/PeriodSales"
+              - type: object
+                required: [start]
+                properties:
+                  start:
+                    type: string
+                    description: "`AAAA-MM-DDTHH` por horas; `AAAA-MM-DD` en los demás casos."
+        topProducts:
+          type: array
+          items:
+            type: object
+            required: [name, unit, quantity, total]
+            properties:
+              name:
+                type: string
+              unit:
+                $ref: "#/components/schemas/Unit"
+              quantity:
+                type: number
+              total:
+                type: number
+        salesWithoutPrice:
+          type: integer
+          description: Ventas del período que no suman porque el producto no tenía precio.
+        salesWithoutCost:
+          type: integer
+          description: Ventas del período que no suman a la ganancia porque no tenían costo.
+        inventory:
+          type: object
+          required: [products, lowStock, outOfStock]
+          properties:
+            products:
+              type: integer
+            lowStock:
+              type: integer
+            outOfStock:
+              type: integer
+      example:
+        from: "2026-11-16"
+        to: "2026-11-18"
+        current: { total: 182000, sales: 41, profit: 51000 }
+        previous: { from: "2026-11-09", to: "2026-11-11", total: 165000, sales: 38, profit: 46000 }
+        granularity: DAY
+        series:
+          - { start: "2026-11-16", total: 64000, sales: 15, profit: 18000 }
+          - { start: "2026-11-17", total: 58000, sales: 13, profit: 16000 }
+          - { start: "2026-11-18", total: 60000, sales: 13, profit: 17000 }
+        topProducts:
+          - { name: Gaseosa 400 ml, unit: UNIT, quantity: 24, total: 60000 }
+        salesWithoutPrice: 0
+        salesWithoutCost: 2
+        inventory: { products: 20, lowStock: 2, outOfStock: 2 }
 
     DeletedProduct:
       type: object

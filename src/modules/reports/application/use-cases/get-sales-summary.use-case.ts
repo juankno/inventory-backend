@@ -35,7 +35,7 @@ export interface SalesSummary {
   salesWithoutCost: number;
 }
 
-const periodSales = (sales: ReportMovement[]): PeriodSales => ({
+export const periodSales = (sales: ReportMovement[]): PeriodSales => ({
   sales: sales.length,
   total: roundToCents(
     sales.reduce((sum, sale) => sum + sale.quantity * (sale.unitPrice ?? 0), 0),
@@ -45,25 +45,31 @@ const periodSales = (sales: ReportMovement[]): PeriodSales => ({
   ),
 });
 
+/** Los más vendidos, por valor y luego por cantidad. */
+export const topProducts = (sales: ReportMovement[]): TopProduct[] => {
+  const products = new Map<string, TopProduct>();
+  for (const sale of sales) {
+    const item = products.get(sale.productCode) ?? {
+      name: sale.productName,
+      unit: sale.unit,
+      quantity: 0,
+      total: 0,
+    };
+    item.quantity = roundToCents(item.quantity + sale.quantity);
+    item.total = roundToCents(item.total + sale.quantity * (sale.unitPrice ?? 0));
+    products.set(sale.productCode, item);
+  }
+  return [...products.values()]
+    .sort((a, b) => b.total - a.total || b.quantity - a.quantity)
+    .slice(0, TOP_PRODUCTS);
+};
+
 export class GetSalesSummary {
   constructor(private readonly queries: ReportQueries) {}
 
   async execute(businessId: string, now = new Date()): Promise<SalesSummary> {
     const { today, week } = currentPeriods(now);
     const sales = await this.queries.listSales(businessId, week, MAX_REPORT_ROWS);
-
-    const products = new Map<string, TopProduct>();
-    for (const sale of sales) {
-      const item = products.get(sale.productCode) ?? {
-        name: sale.productName,
-        unit: sale.unit,
-        quantity: 0,
-        total: 0,
-      };
-      item.quantity = roundToCents(item.quantity + sale.quantity);
-      item.total = roundToCents(item.total + sale.quantity * (sale.unitPrice ?? 0));
-      products.set(sale.productCode, item);
-    }
 
     return {
       today: periodSales(
@@ -72,9 +78,7 @@ export class GetSalesSummary {
         ),
       ),
       week: periodSales(sales),
-      topProducts: [...products.values()]
-        .sort((a, b) => b.total - a.total || b.quantity - a.quantity)
-        .slice(0, TOP_PRODUCTS),
+      topProducts: topProducts(sales),
       salesWithoutPrice: sales.filter((sale) => sale.unitPrice === null).length,
       salesWithoutCost: sales.filter((sale) => sale.unitCost === null).length,
     };
