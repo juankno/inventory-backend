@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 
-import { buildProductName, OpenFoodFactsCatalog, safeImageUrl } from "./open-food-facts-catalog.ts";
+import { buildProductName, fullSizeUrl, OpenFoodFactsCatalog, safeImageUrl } from "./open-food-facts-catalog.ts";
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -62,6 +62,18 @@ describe("safeImageUrl", () => {
   });
 });
 
+describe("fullSizeUrl", () => {
+  it("should turn the thumbnail into the original photo", () => {
+    expect(fullSizeUrl("https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.200.jpg")).toBe(
+      "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.full.jpg",
+    );
+  });
+
+  it("should return null for another form", () => {
+    expect(fullSizeUrl("https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.png")).toBeNull();
+  });
+});
+
 describe("OpenFoodFactsCatalog", () => {
   it("should return the product sold by unit", async () => {
     const { fetchFn, catalog } = setup(
@@ -78,17 +90,31 @@ describe("OpenFoodFactsCatalog", () => {
     expect((init?.headers as Record<string, string>)["User-Agent"]).toMatch(/^Surtido\//);
   });
 
-  it("should return the thumbnail and the large photo", async () => {
+  it("should return the thumbnail and the original photo for full screen", async () => {
     const small = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.200.jpg";
-    const large = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.400.jpg";
+    const display = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.400.jpg";
+    const full = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.full.jpg";
     const { catalog } = setup(
       jsonResponse(200, {
         status: 1,
-        product: { product_name: "Refisal sal", image_front_small_url: small, image_front_url: large },
+        product: { product_name: "Refisal sal", image_front_small_url: small, image_front_url: display },
       }),
     );
 
-    expect(await catalog.findByGtin("7703812004862")).toMatchObject({ imageUrl: small, imageLargeUrl: large });
+    expect(await catalog.findByGtin("7703812004862")).toMatchObject({ imageUrl: small, imageLargeUrl: full });
+  });
+
+  it("should fall back to the 400 px photo when the thumbnail has another form", async () => {
+    const small = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.png";
+    const display = "https://images.openfoodfacts.org/images/products/770/381/200/4862/front_en.4.400.jpg";
+    const { catalog } = setup(
+      jsonResponse(200, {
+        status: 1,
+        product: { product_name: "Refisal sal", image_front_small_url: small, image_front_url: display },
+      }),
+    );
+
+    expect(await catalog.findByGtin("7703812004862")).toMatchObject({ imageUrl: small, imageLargeUrl: display });
   });
 
   it("should not return a large photo without a thumbnail", async () => {
