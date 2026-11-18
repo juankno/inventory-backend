@@ -88,6 +88,10 @@ export const errorCatalog = {
     status: 404,
     message: "Este código no corresponde a un producto de tu inventario.",
   },
+  SUGGESTION_NOT_FOUND: {
+    status: 404,
+    message: "No tenemos datos de este código. Escribe el nombre del producto.",
+  },
 } as const satisfies Record<string, { status: ErrorStatus; message: string }>;
 
 export type ErrorCode = keyof typeof errorCatalog;
