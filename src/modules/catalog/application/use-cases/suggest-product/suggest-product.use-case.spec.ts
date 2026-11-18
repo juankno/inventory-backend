@@ -74,6 +74,19 @@ describe("SuggestProduct", () => {
       expect(cache.entries.get(GTIN)?.entry).toEqual({ ...arroz, imageUrl: photo, imageLargeUrl: large });
     });
 
+    it("should answer with the base that knew the product, also when saved", async () => {
+      const { cache, external, suggest } = setup();
+      const shampoo = { name: "Champú Vichy 200ml", unit: "UNIT" as const, source: "OPEN_BEAUTY_FACTS" as const };
+      external.entry = shampoo;
+
+      expect(await suggest()).toMatchObject({ name: "Champú Vichy 200ml", source: "OPEN_BEAUTY_FACTS" });
+      expect(info).toHaveBeenCalledWith("Sugerencia de producto: OPEN_BEAUTY_FACTS");
+
+      external.entry = null;
+      expect(await suggest()).toMatchObject({ source: "OPEN_BEAUTY_FACTS" });
+      expect(cache.entries.get(GTIN)?.entry).toEqual(shampoo);
+    });
+
     it("should use a saved answer for 90 days without asking again", async () => {
       const { cache, external, suggest } = setup();
       cache.entries.set(GTIN, { entry: arroz, fetchedAt: daysAgo(89) });
