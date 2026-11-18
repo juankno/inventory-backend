@@ -66,10 +66,7 @@ export function fullSizeUrl(thumbnailUrl: string): string | null {
  * La dirección si es del servidor de imágenes indicado; si no, null. La app nunca carga
  * una dirección cualquiera que venga en los datos.
  */
-export function safeImageUrl(
-  value: string | undefined,
-  imageHost = OPEN_FOOD_FACTS.imageHost,
-): string | null {
+export function safeImageUrl(value: string | undefined, imageHost: string): string | null {
   const url = value?.trim();
   if (!url || url.length > MAX_IMAGE_URL_LENGTH || /[\s"'<>]/.test(url)) return null;
   return url.startsWith(`https://${imageHost}/`) ? url : null;
@@ -146,26 +143,5 @@ export class OpenFactsCatalog implements ExternalCatalog {
         ? (fullSizeUrl(imageUrl) ?? safeImageUrl(body.product.image_front_url, this.site.imageHost))
         : null,
     };
-  }
-}
-
-/**
- * Consulta varias bases a la vez y responde con la primera de la lista que conozca el
- * código. Van en paralelo para que la espera sea la de la más lenta, no la suma.
- *
- * Si ninguna lo conoce pero alguna falló, falla: así no se guarda como "no existe" un
- * código que quizás la base caída sí conocía.
- */
-export class FirstMatchCatalog implements ExternalCatalog {
-  constructor(private readonly catalogs: ExternalCatalog[]) {}
-
-  async findByGtin(code: string): Promise<CatalogEntry | null> {
-    const results = await Promise.allSettled(this.catalogs.map((catalog) => catalog.findByGtin(code)));
-    for (const result of results) {
-      if (result.status === "fulfilled" && result.value) return result.value;
-    }
-    const failure = results.find((result) => result.status === "rejected");
-    if (failure) throw failure.reason;
-    return null;
   }
 }

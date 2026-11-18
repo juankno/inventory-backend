@@ -20,7 +20,7 @@ export interface CatalogEntry {
   name: string;
   unit: Unit;
   /**
-   * Foto del frente del producto, solo de la base pública. Sirve para confirmar que
+   * Foto del frente del producto, solo de las bases públicas. Sirve para confirmar que
    * el código es de ese producto; no se guarda en el inventario.
    */
   imageUrl?: string | null;
@@ -45,15 +45,15 @@ export const MIN_BUSINESSES_FOR_SUGGESTION = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Cuánto sirve una respuesta guardada de la base pública antes de volver a consultarla. */
+/** Cuánto sirve una respuesta guardada de las bases públicas antes de volver a consultarlas. */
 export const FOUND_TTL_DAYS = 90;
 /**
- * Un código que la base pública no conoce se vuelve a consultar antes, por si
+ * Un código que ninguna base pública conoce se vuelve a consultar antes, por si
  * alguien lo agrega.
  */
 export const NOT_FOUND_TTL_DAYS = 7;
 
-/** Respuesta guardada de la base pública: `entry` es null si no conocía el código. */
+/** Respuesta guardada de las bases públicas: `entry` es null si ninguna conocía el código. */
 export interface CachedEntry {
   entry: CatalogEntry | null;
   fetchedAt: Date;

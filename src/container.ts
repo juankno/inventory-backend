@@ -12,8 +12,8 @@ import { RandomResetCodeGenerator } from "./modules/auth/infrastructure/random-r
 import { requireAuthMiddleware } from "./modules/auth/presentation/require-auth.middleware.ts";
 import { SuggestProduct } from "./modules/catalog/application/use-cases/suggest-product/suggest-product.use-case.ts";
 import { PrismaCatalogCache } from "./modules/catalog/infrastructure/prisma-catalog-cache.ts";
+import { FirstMatchCatalog } from "./modules/catalog/infrastructure/first-match-catalog.ts";
 import {
-  FirstMatchCatalog,
   OPEN_BEAUTY_FACTS,
   OPEN_FOOD_FACTS,
   OpenFactsCatalog,

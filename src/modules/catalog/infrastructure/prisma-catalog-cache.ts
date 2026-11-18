@@ -16,7 +16,7 @@ export class PrismaCatalogCache implements CatalogCache {
   async find(code: string): Promise<CachedEntry | null> {
     const row = await this.prisma.catalogEntry.findUnique({ where: { code } });
     if (!row) return null;
-    // Sin nombre o sin unidad, la base pública no conocía el código.
+    // Sin nombre o sin unidad, ninguna base pública conocía el código.
     const entry =
       row.name && row.unit
         ? {
