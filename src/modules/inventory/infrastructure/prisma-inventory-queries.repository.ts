@@ -20,6 +20,8 @@ const productSelect = {
   minStock: true,
   codeType: true,
   code: true,
+  imageUrl: true,
+  imageLargeUrl: true,
 } satisfies Prisma.ProductSelect;
 
 const movementSelect = {
@@ -46,6 +48,8 @@ const toInventoryProduct = (row: ProductRow): InventoryProduct => ({
   minStock: row.minStock?.toNumber() ?? null,
   codeType: row.codeType,
   code: row.code,
+  imageUrl: row.imageUrl,
+  imageLargeUrl: row.imageLargeUrl,
 });
 
 const toHistoryMovement = (row: MovementRow): HistoryMovement => ({

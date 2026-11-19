@@ -48,6 +48,33 @@ describe("CreateProduct", () => {
       });
     });
 
+    it("should keep the public photo of a product with a barcode", async () => {
+      const { createProduct } = setup();
+      const imageUrl = "https://images.openfoodfacts.org/images/products/770/200/400/3508/front_es.4.200.jpg";
+      const imageLargeUrl = imageUrl.replace(".200.jpg", ".full.jpg");
+
+      const product = await createProduct.execute({ ...validInput, imageUrl, imageLargeUrl });
+
+      expect(product).toMatchObject({ imageUrl, imageLargeUrl });
+    });
+
+    it("should not keep a photo for a product without a barcode", async () => {
+      const { createProduct } = setup(["INV-7KQ2M9XA4T"]);
+
+      const product = await createProduct.execute({
+        ...inputWithoutCode,
+        imageUrl: "https://images.openfoodfacts.org/images/products/770/200/400/3508/front_es.4.200.jpg",
+      });
+
+      expect(product).toMatchObject({ codeType: "INTERNAL", imageUrl: null, imageLargeUrl: null });
+    });
+
+    it("should store null photos when none are sent", async () => {
+      const { createProduct } = setup();
+
+      expect(await createProduct.execute(validInput)).toMatchObject({ imageUrl: null, imageLargeUrl: null });
+    });
+
     it("should store null when salePrice and minStock are not sent", async () => {
       const { createProduct } = setup();
       const input = { ...validInput, salePrice: undefined, minStock: undefined };

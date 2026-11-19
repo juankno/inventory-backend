@@ -15,6 +15,23 @@ const validBody = {
 };
 
 describe("createProductSchema", () => {
+  it("should accept public photos from Open Food Facts and Open Beauty Facts", () => {
+    const result = createProductSchema.safeParse({
+      ...validBody,
+      imageUrl: "https://images.openfoodfacts.org/images/products/770/200/400/3508/front_es.4.200.jpg",
+      imageLargeUrl: "https://images.openbeautyfacts.org/images/products/333/787/131/1292/front_fr.16.full.jpg",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each([
+    ["another server", "https://example.com/foto.jpg"],
+    ["plain http", "http://images.openfoodfacts.org/images/products/front.jpg"],
+  ])("should reject a photo from %s", (_case, imageUrl) => {
+    expect(createProductSchema.safeParse({ ...validBody, imageUrl }).success).toBe(false);
+  });
+
   it("should accept a valid body", () => {
     const result = createProductSchema.safeParse(validBody);
 

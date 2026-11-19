@@ -13,6 +13,8 @@ const gtinProduct: ProductData = {
   minStock: 6,
   codeType: "GTIN",
   code: "7702004003508",
+  imageUrl: null,
+  imageLargeUrl: null,
 };
 
 function setup() {

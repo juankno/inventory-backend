@@ -24,6 +24,9 @@ export interface CreateProductInput {
   costPrice?: number;
   minStock?: number;
   code?: string;
+  /** Foto pública que llegó con la sugerencia. Solo para productos con código de barras. */
+  imageUrl?: string;
+  imageLargeUrl?: string;
 }
 
 type ProductDataWithoutCode = Omit<ProductData, "code" | "codeType">;
@@ -54,6 +57,10 @@ export class CreateProduct {
       salePrice: data.salePrice ?? null,
       costPrice: data.costPrice ?? null,
       minStock: data.minStock ?? null,
+      // Las fotos vienen de la sugerencia por código de barras: un producto sin código
+      // (QR interno) no tiene de dónde sacarlas.
+      imageUrl: data.code === undefined ? null : (data.imageUrl ?? null),
+      imageLargeUrl: data.code === undefined ? null : (data.imageLargeUrl ?? null),
     };
 
     if (data.code === undefined) {

@@ -11,6 +11,8 @@ export interface InventoryProduct {
   minStock: number | null;
   codeType: "GTIN" | "INTERNAL";
   code: string;
+  imageUrl: string | null;
+  imageLargeUrl: string | null;
 }
 
 export interface DeletedProduct extends InventoryProduct {

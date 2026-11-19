@@ -27,6 +27,8 @@ describe("withStockStatus", () => {
       minStock: 4,
       codeType: "INTERNAL" as const,
       code: "INV-7KQ2M9XA4T",
+      imageUrl: null,
+      imageLargeUrl: null,
     };
 
     const result = withStockStatus(product);

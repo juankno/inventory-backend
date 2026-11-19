@@ -13,6 +13,9 @@ export interface Product {
   minStock: number | null;
   codeType: CodeType;
   code: string;
+  /** Foto pública del producto (miniatura y tamaño original), si se registró con una. */
+  imageUrl: string | null;
+  imageLargeUrl: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

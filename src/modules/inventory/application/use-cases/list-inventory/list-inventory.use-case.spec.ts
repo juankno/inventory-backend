@@ -16,6 +16,8 @@ const baseProduct: StoredProduct = {
   minStock: 4,
   codeType: "INTERNAL",
   code: "INV-7KQ2M9XA4T",
+  imageUrl: null,
+  imageLargeUrl: null,
 };
 
 function setup(products: Partial<StoredProduct>[]) {
