@@ -16,6 +16,8 @@ const productData: ProductData = {
   minStock: 6,
   codeType: "GTIN",
   code: "7702004003508",
+  imageUrl: null,
+  imageLargeUrl: null,
 };
 
 const createdAt = new Date("2026-11-08T12:00:00Z");
@@ -83,6 +85,8 @@ describe("PrismaProductRepository", () => {
           minStock: 6,
           codeType: "GTIN",
           code: "7702004003508",
+          imageUrl: null,
+          imageLargeUrl: null,
           movements: {
             create: {
               userId: "user-1",

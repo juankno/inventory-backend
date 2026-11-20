@@ -14,6 +14,8 @@ async function setup() {
     minStock: null,
     codeType: "INTERNAL",
     code: "INV-7KQ2M9XA4T",
+    imageUrl: null,
+    imageLargeUrl: null,
   });
   return {
     product,

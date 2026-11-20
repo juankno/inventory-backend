@@ -20,6 +20,8 @@ const productSelect = {
   minStock: true,
   codeType: true,
   code: true,
+  imageUrl: true,
+  imageLargeUrl: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -39,6 +41,8 @@ const toProduct = (row: ProductRow): Product => {
     minStock: row.minStock?.toNumber() ?? null,
     codeType: row.codeType,
     code: row.code,
+    imageUrl: row.imageUrl,
+    imageLargeUrl: row.imageLargeUrl,
     isActive: row.isActive,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -61,6 +65,8 @@ export class PrismaProductRepository implements ProductRepository {
           minStock: data.minStock,
           codeType: data.codeType,
           code: data.code,
+          imageUrl: data.imageUrl,
+          imageLargeUrl: data.imageLargeUrl,
           ...(data.stock > 0 && {
             movements: {
               create: {

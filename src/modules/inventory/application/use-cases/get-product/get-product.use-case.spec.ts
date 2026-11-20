@@ -18,6 +18,8 @@ const storedProduct: StoredProduct = {
   minStock: 5,
   codeType: "GTIN",
   code: "7702004003508",
+  imageUrl: null,
+  imageLargeUrl: null,
 };
 
 function setup(product: Partial<StoredProduct> = {}) {
@@ -46,6 +48,8 @@ describe("GetProduct", () => {
         minStock: 5,
         codeType: "GTIN",
         code: "7702004003508",
+        imageUrl: null,
+        imageLargeUrl: null,
         status: "LOW_STOCK",
       });
     });

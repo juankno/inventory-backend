@@ -13,6 +13,8 @@ const productData: ProductData = {
   minStock: 2,
   codeType: "INTERNAL",
   code: "INV-7KQ2M9XA4T",
+  imageUrl: null,
+  imageLargeUrl: null,
 };
 
 async function setup(data: Partial<ProductData> = {}) {

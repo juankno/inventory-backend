@@ -11,6 +11,8 @@ export type ProductResponse = Pick<
   | "minStock"
   | "codeType"
   | "code"
+  | "imageUrl"
+  | "imageLargeUrl"
 >;
 
 export const toProductResponse = (product: Product): ProductResponse => {
@@ -24,5 +26,7 @@ export const toProductResponse = (product: Product): ProductResponse => {
     minStock: product.minStock,
     codeType: product.codeType,
     code: product.code,
+    imageUrl: product.imageUrl,
+    imageLargeUrl: product.imageLargeUrl,
   };
 };

@@ -1585,6 +1585,18 @@ components:
           type: string
           maxLength: 32
           description: GTIN de 8 o 13 dígitos ya normalizado. Si no se envía, el backend genera uno interno.
+        imageUrl:
+          type: string
+          maxLength: 500
+          description: |
+            Miniatura del producto que llegó con la sugerencia de `/catalog/{code}`. Solo se
+            aceptan direcciones `https://images.openfoodfacts.org/…` o
+            `https://images.openbeautyfacts.org/…`; otra responde `400 VALIDATION_ERROR`. Se
+            ignora si no se envía `code`.
+        imageLargeUrl:
+          type: string
+          maxLength: 500
+          description: La misma foto en tamaño original, con las mismas reglas que `imageUrl`.
 
     Product:
       type: object
@@ -1604,6 +1616,14 @@ components:
         costPrice:
           type: [number, "null"]
           description: Lo que le cuesta al negocio cada unidad.
+        imageUrl:
+          type: [string, "null"]
+          description: |
+            Miniatura pública del producto (Open Food Facts u Open Beauty Facts), si se
+            registró aceptando una sugerencia con foto. El sistema no guarda archivos.
+        imageLargeUrl:
+          type: [string, "null"]
+          description: La misma foto en tamaño original, para verla en pantalla completa.
         minStock:
           type: [number, "null"]
         codeType:

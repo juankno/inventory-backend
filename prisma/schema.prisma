@@ -75,6 +75,10 @@ model Product {
   minStock   Decimal? @map("min_stock") @db.Decimal(12, 2)
   codeType   CodeType @map("code_type")
   code       String   @db.VarChar(32)
+  // Foto pública del producto (Open Food Facts u Open Beauty Facts), que llega con la
+  // sugerencia al registrar un código de barras. Miniatura y tamaño original.
+  imageUrl      String?  @map("image_url") @db.VarChar(500)
+  imageLargeUrl String?  @map("image_large_url") @db.VarChar(500)
   isActive   Boolean  @default(true) @map("is_active")
   // Cuándo se eliminó. Eliminar es reversible: la limpieza definitiva, si se hace,
   // debe usar esta fecha para respetar un tiempo de retención.
