@@ -57,6 +57,18 @@ describe("movementHistoryQuerySchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should accept a filter by type and reason", () => {
+    const result = movementHistoryQuerySchema.safeParse({ type: "OUTBOUND", reason: "SALE" });
+
+    expect(result.success).toBe(true);
+  });
+
+  it.each([{ type: "TRANSFER" }, { reason: "GIFT" }])("should reject the filter %j", (query) => {
+    const result = movementHistoryQuerySchema.safeParse(query);
+
+    expect(result.success).toBe(false);
+  });
+
   it("should read the limit from the query string as a number", () => {
     const result = movementHistoryQuerySchema.parse({ limit: "5" });
 

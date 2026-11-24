@@ -55,7 +55,7 @@ export const inventoryRouter = ({
 
   router.get("/:id/movements", async (req, res) => {
     const { id } = validate(productIdParamsSchema, req.params);
-    const { cursor, limit } = validate(movementHistoryQuerySchema, req.query);
+    const { cursor, limit, type, reason } = validate(movementHistoryQuerySchema, req.query);
     const { businessId } = res.locals.auth;
     res
       .status(200)
@@ -65,6 +65,7 @@ export const inventoryRouter = ({
           productId: id,
           cursor,
           limit,
+          filter: { type, reason },
         }),
       );
   });

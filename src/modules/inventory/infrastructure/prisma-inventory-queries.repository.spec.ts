@@ -27,6 +27,8 @@ const movementRow = (id: string) => ({
   resultingStock: new Prisma.Decimal("2.50"),
   unitPrice: new Prisma.Decimal("2500"),
   unitCost: new Prisma.Decimal("1800.50"),
+  revertsMovementId: null,
+  revertedBy: null,
   createdAt: new Date("2026-11-08T12:00:00Z"),
 });
 
@@ -164,6 +166,40 @@ describe("PrismaInventoryQueries", () => {
       );
       expect(page.items[0]).toMatchObject({ unitPrice: 2500, unitCost: 1800.5 });
       expect(page.items[1]).toMatchObject({ unitPrice: null, unitCost: null });
+    });
+
+    it("should keep only the movements of the filter", async () => {
+      const { findManyMovements, queries } = setup();
+      findManyMovements.mockResolvedValue([]);
+
+      await queries.listMovements("business-1", PRODUCT_ID, {
+        limit: 50,
+        filter: { type: "OUTBOUND", reason: "SALE" },
+      });
+
+      expect(findManyMovements).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            productId: PRODUCT_ID,
+            product: { businessId: "business-1" },
+            type: "OUTBOUND",
+            reason: "SALE",
+          },
+        }),
+      );
+    });
+
+    it("should say which movement an undo reverts and whether a movement was undone", async () => {
+      const { findManyMovements, queries } = setup();
+      findManyMovements.mockResolvedValue([
+        { ...movementRow("m-2"), type: "ADJUSTMENT", reason: null, revertsMovementId: "m-1" },
+        { ...movementRow("m-1"), revertedBy: { id: "m-2" } },
+      ]);
+
+      const page = await queries.listMovements("business-1", PRODUCT_ID, { limit: 2 });
+
+      expect(page.items[0]).toMatchObject({ revertsMovementId: "m-1", reverted: false });
+      expect(page.items[1]).toMatchObject({ revertsMovementId: null, reverted: true });
     });
 
     it("should return a null cursor on the last page", async () => {
