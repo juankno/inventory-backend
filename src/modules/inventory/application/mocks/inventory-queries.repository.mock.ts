@@ -15,7 +15,11 @@ export type StoredProduct = InventoryProduct & {
   deletedAt?: Date;
 };
 
-export type StoredHistoryMovement = HistoryMovement & { productId: string };
+// reverted se calcula con los demás movimientos, como hace la base de datos.
+export type StoredHistoryMovement = Omit<HistoryMovement, "reverted" | "revertsMovementId"> & {
+  productId: string;
+  revertsMovementId?: string | null;
+};
 
 export class InventoryQueriesMock implements InventoryQueries {
   readonly products: StoredProduct[] = [];
@@ -69,13 +73,18 @@ export class InventoryQueriesMock implements InventoryQueries {
   async listMovements(
     businessId: string,
     productId: string,
-    { limit, cursor }: PageRequest,
+    { limit, cursor, filter }: PageRequest,
   ): Promise<MovementPage> {
     const ownsProduct = this.products.some(
       (product) => product.id === productId && product.businessId === businessId,
     );
     const history = this.movements
       .filter((movement) => ownsProduct && movement.productId === productId)
+      .filter(
+        (movement) =>
+          (!filter?.type || movement.type === filter.type) &&
+          (!filter?.reason || movement.reason === filter.reason),
+      )
       .sort(
         (a, b) =>
           b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
@@ -86,7 +95,11 @@ export class InventoryQueriesMock implements InventoryQueries {
     const page = history.slice(start, start + limit);
     const hasMore = start + limit < history.length;
     return {
-      items: page.map(({ productId: _productId, ...movement }) => movement),
+      items: page.map(({ productId: _productId, revertsMovementId = null, ...movement }) => ({
+        ...movement,
+        revertsMovementId,
+        reverted: this.movements.some((other) => other.revertsMovementId === movement.id),
+      })),
       nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
     };
   }

@@ -1,4 +1,7 @@
-import type { HistoryMovement } from "../../domain/models/history-movement.model.ts";
+import type {
+  HistoryMovement,
+  MovementFilter,
+} from "../../domain/models/history-movement.model.ts";
 import type {
   DeletedProduct,
   InventoryProduct,
@@ -7,6 +10,7 @@ import type {
 export interface PageRequest {
   limit: number;
   cursor?: string;
+  filter?: MovementFilter;
 }
 
 export interface MovementPage {

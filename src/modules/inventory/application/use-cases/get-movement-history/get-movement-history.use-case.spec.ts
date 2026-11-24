@@ -41,11 +41,64 @@ function setup(movementCount: number, product: Partial<StoredProduct> = {}) {
       createdAt: new Date(Date.UTC(2026, 10, 1, 0, index)),
     });
   }
-  return { getMovementHistory: new GetMovementHistory(inventoryQueries) };
+  return { getMovementHistory: new GetMovementHistory(inventoryQueries), inventoryQueries };
 }
 
 describe("GetMovementHistory", () => {
   describe("execute", () => {
+    it("should only return the movements of the filter, page by page", async () => {
+      const { getMovementHistory, inventoryQueries } = setup(4);
+      inventoryQueries.movements.push(
+        ...[5, 6, 7].map((index) => ({
+          id: `sale-${index}`,
+          productId: PRODUCT_ID,
+          type: "OUTBOUND" as const,
+          reason: "SALE" as const,
+          quantity: 1,
+          resultingStock: 0,
+          unitPrice: 2500,
+          unitCost: null,
+          createdAt: new Date(Date.UTC(2026, 10, 2, 0, index)),
+        })),
+      );
+      const input = {
+        businessId: "business-1",
+        productId: PRODUCT_ID,
+        limit: 2,
+        filter: { type: "OUTBOUND" as const, reason: "SALE" as const },
+      };
+
+      const first = await getMovementHistory.execute(input);
+      const second = await getMovementHistory.execute({ ...input, cursor: first.nextCursor ?? undefined });
+
+      expect(first.items.map((movement) => movement.id)).toEqual(["sale-7", "sale-6"]);
+      expect(second.items.map((movement) => movement.id)).toEqual(["sale-5"]);
+      expect(second.nextCursor).toBeNull();
+    });
+
+    it("should mark the undone movement and link the undo to it", async () => {
+      const { getMovementHistory, inventoryQueries } = setup(1);
+      inventoryQueries.movements.push({
+        id: "undo-1",
+        productId: PRODUCT_ID,
+        type: "ADJUSTMENT",
+        reason: null,
+        quantity: -1,
+        resultingStock: 0,
+        unitPrice: null,
+        unitCost: null,
+        revertsMovementId: "movement-001",
+        createdAt: new Date(Date.UTC(2026, 10, 3)),
+      });
+
+      const page = await getMovementHistory.execute({ businessId: "business-1", productId: PRODUCT_ID });
+
+      expect(page.items).toEqual([
+        expect.objectContaining({ id: "undo-1", revertsMovementId: "movement-001", reverted: false }),
+        expect.objectContaining({ id: "movement-001", revertsMovementId: null, reverted: true }),
+      ]);
+    });
+
     it("should respect the requested limit", async () => {
       const { getMovementHistory } = setup(8);
 

@@ -32,6 +32,8 @@ const movementSelect = {
   resultingStock: true,
   unitPrice: true,
   unitCost: true,
+  revertsMovementId: true,
+  revertedBy: { select: { id: true } },
   createdAt: true,
 } satisfies Prisma.MovementSelect;
 
@@ -60,6 +62,8 @@ const toHistoryMovement = (row: MovementRow): HistoryMovement => ({
   resultingStock: row.resultingStock.toNumber(),
   unitPrice: row.unitPrice?.toNumber() ?? null,
   unitCost: row.unitCost?.toNumber() ?? null,
+  revertsMovementId: row.revertsMovementId,
+  reverted: row.revertedBy !== null,
   createdAt: row.createdAt,
 });
 
@@ -112,10 +116,10 @@ export class PrismaInventoryQueries implements InventoryQueries {
   async listMovements(
     businessId: string,
     productId: string,
-    { limit, cursor }: PageRequest,
+    { limit, cursor, filter }: PageRequest,
   ): Promise<MovementPage> {
     const rows = await this.prisma.movement.findMany({
-      where: { productId, product: { businessId } },
+      where: { productId, product: { businessId }, ...filter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit + 1,
       ...(cursor && { cursor: { id: cursor }, skip: 1 }),

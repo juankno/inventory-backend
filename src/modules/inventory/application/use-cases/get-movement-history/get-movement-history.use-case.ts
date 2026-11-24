@@ -1,4 +1,5 @@
 import { AppError } from "../../../../../shared/errors/app-error.ts";
+import type { MovementFilter } from "../../../domain/models/history-movement.model.ts";
 import type {
   InventoryQueries,
   MovementPage,
@@ -11,6 +12,7 @@ export interface GetMovementHistoryInput {
   productId: string;
   cursor?: string;
   limit?: number;
+  filter?: MovementFilter;
 }
 
 export class GetMovementHistory {
@@ -26,6 +28,7 @@ export class GetMovementHistory {
     return this.inventoryQueries.listMovements(data.businessId, data.productId, {
       limit: data.limit ?? HISTORY_PAGE_SIZE,
       cursor: data.cursor,
+      filter: data.filter,
     });
   }
 }

@@ -1058,7 +1058,9 @@ paths:
       description: |
         Movimientos del producto del más reciente al más antiguo, de 50 en 50 si no llega `limit`.
         Para pedir la página siguiente, la app envía en `cursor` el `nextCursor` de la respuesta
-        anterior; cuando es `null`, no hay más.
+        anterior; cuando es `null`, no hay más. Con `type` y `reason` se ven solo esos movimientos
+        (por ejemplo, las ventas: `type=OUTBOUND&reason=SALE`); el cursor sigue funcionando con el
+        mismo filtro.
       operationId: getMovementHistory
       parameters:
         - $ref: "#/components/parameters/ProductId"
@@ -1077,6 +1079,20 @@ paths:
             type: integer
             minimum: 1
             maximum: 100
+        - name: type
+          in: query
+          required: false
+          description: Solo los movimientos de este tipo.
+          schema:
+            type: string
+            enum: [INBOUND, OUTBOUND, ADJUSTMENT]
+        - name: reason
+          in: query
+          required: false
+          description: Solo las salidas con este motivo.
+          schema:
+            type: string
+            enum: [SALE, CONSUMPTION, LOSS]
       responses:
         "200":
           description: Una página del historial.
@@ -1091,16 +1107,24 @@ paths:
                     reason: SALE
                     quantity: 2
                     resultingStock: 22
+                    unitPrice: 3500
+                    unitCost: 2600
+                    revertsMovementId: null
+                    reverted: false
                     createdAt: "2026-11-08T15:30:00.000Z"
                   - id: 1c2b9e4c-1e5e-4f70-8192-a44d8b9e3f1c
                     type: INBOUND
                     reason: null
                     quantity: 24
                     resultingStock: 24
+                    unitPrice: null
+                    unitCost: null
+                    revertsMovementId: null
+                    reverted: false
                     createdAt: "2026-11-01T09:00:00.000Z"
                 nextCursor: null
         "400":
-          description: "`VALIDATION_ERROR`: el id o el cursor no son UUID, o `limit` no está entre 1 y 100."
+          description: "`VALIDATION_ERROR`: el id o el cursor no son UUID, `limit` no está entre 1 y 100, o `type` o `reason` no existen."
           content:
             application/json:
               schema:
@@ -1762,7 +1786,7 @@ components:
 
     HistoryMovement:
       type: object
-      required: [id, type, reason, quantity, resultingStock, unitPrice, unitCost, createdAt]
+      required: [id, type, reason, quantity, resultingStock, unitPrice, unitCost, revertsMovementId, reverted, createdAt]
       properties:
         id:
           type: string
@@ -1784,6 +1808,13 @@ components:
         unitCost:
           type: [number, "null"]
           description: Costo unitario con que se registró la salida. `null` en entradas y ajustes, o si no había costo (por ejemplo, ventas anteriores al costo del producto).
+        revertsMovementId:
+          type: [string, "null"]
+          format: uuid
+          description: Solo en los ajustes de "Deshacer". El movimiento que este ajuste revierte.
+        reverted:
+          type: boolean
+          description: Si el movimiento se deshizo con "Deshacer". Una venta deshecha no cuenta en los reportes.
         createdAt:
           type: string
           format: date-time
