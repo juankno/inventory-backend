@@ -31,7 +31,15 @@ describe("registerMovementSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should accept a sale with its own price and cost", () => {
+    const result = registerMovementSchema.safeParse({ ...validBody, unitPrice: 2800, unitCost: 2000 });
+
+    expect(result.success).toBe(true);
+  });
+
   it.each([
+    ["a negative price", { unitPrice: -1 }],
+    ["a price sent as text", { unitPrice: "2800" }],
     ["a productId that is not a UUID", { productId: "product-1" }],
     ["an idempotencyKey that is not a UUID", { idempotencyKey: "123" }],
     ["a missing idempotencyKey", { idempotencyKey: undefined }],

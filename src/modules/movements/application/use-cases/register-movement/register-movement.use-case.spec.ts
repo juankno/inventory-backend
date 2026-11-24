@@ -1,4 +1,5 @@
 import { MovementRepositoryMock } from "../../mocks/movement.repository.mock.ts";
+import type { NewMovement } from "../../ports/movement.repository.ts";
 import {
   MAX_STOCK_ATTEMPTS,
   RegisterMovement,
@@ -72,6 +73,62 @@ describe("RegisterMovement", () => {
       });
 
       expect(result.movement?.unitPrice).toBeNull();
+    });
+
+    it("should store a different price and keep it as the new product price", async () => {
+      const { registerMovement, product } = setup(10);
+      product.salePrice = 2500;
+
+      const result = await registerMovement.execute({ ...saleInput, unitPrice: 2800 });
+
+      expect(result.movement?.unitPrice).toBe(2800);
+      expect(product.salePrice).toBe(2800);
+    });
+
+    it("should set the price of a product that had none", async () => {
+      const { registerMovement, product } = setup(10);
+
+      const result = await registerMovement.execute({ ...saleInput, unitPrice: 3000 });
+
+      expect(result.movement?.unitPrice).toBe(3000);
+      expect(product.salePrice).toBe(3000);
+    });
+
+    it("should keep the product price when the same price is sent", async () => {
+      const { registerMovement, movementRepository, product } = setup(10);
+      product.salePrice = 2500;
+      const recorded: NewMovement[] = [];
+      const record = movementRepository.record.bind(movementRepository);
+      movementRepository.record = (data) => {
+        recorded.push(data);
+        return record(data);
+      };
+
+      await registerMovement.execute({ ...saleInput, unitPrice: 2500 });
+
+      expect(recorded[0]?.newSalePrice).toBeUndefined();
+      expect(product.salePrice).toBe(2500);
+    });
+
+    it("should only accept a price on an OUTBOUND", async () => {
+      const { registerMovement } = setup(10);
+
+      const registering = registerMovement.execute({
+        ...saleInput,
+        type: "ADJUSTMENT",
+        reason: undefined,
+        unitPrice: 2800,
+      });
+
+      await expect(registering).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    });
+
+    it("should reject a price with more than 2 decimals", async () => {
+      const { registerMovement } = setup(10);
+
+      const registering = registerMovement.execute({ ...saleInput, unitPrice: 10.123 });
+
+      await expect(registering).rejects.toMatchObject({ code: "INVALID_QUANTITY" });
     });
   });
 

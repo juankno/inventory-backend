@@ -660,8 +660,9 @@ paths:
         - **Idempotencia:** la app genera un UUID nuevo en `idempotencyKey` por cada acción del
           usuario y lo reutiliza si reintenta la misma petición. Si la clave ya se usó, se
           devuelve el movimiento que ya existía (200) y la existencia no cambia dos veces.
-        - **Precio de la venta:** cada salida guarda el precio de venta que tenía el producto,
-          para que los reportes no cambien si después sube el precio.
+        - **Precio de la venta:** cada salida guarda un precio de venta unitario, para que los
+          reportes no cambien si después sube el precio. Sin `unitPrice` se usa el precio del
+          producto; si llega uno distinto, queda como el nuevo precio del producto.
         - **Costo de la venta:** cada salida guarda también un costo unitario, para calcular la
           ganancia. Sin `unitCost` se usa el costo del producto; si llega uno distinto, queda
           como el nuevo costo del producto.
@@ -737,8 +738,9 @@ paths:
             - `VALIDATION_ERROR`: falta un campo, sobra uno, `productId` o `idempotencyKey` no
               son UUID, el tipo o el motivo no existen, falta `reason` en una salida o llega en
               una entrada o un ajuste, `revertsMovementId` llega en algo que no es un ajuste o
-              no es un movimiento de ese producto, o `unitCost` llega en algo que no es una salida.
-            - `INVALID_QUANTITY`: la cantidad o `unitCost` tienen más de 2 decimales, la cantidad no
+              no es un movimiento de ese producto, o `unitCost` o `unitPrice` llegan en algo que no
+              es una salida.
+            - `INVALID_QUANTITY`: la cantidad, `unitCost` o `unitPrice` tienen más de 2 decimales, la cantidad no
               es entera con `UNIT`, o es 0 en una entrada o una salida.
             - `INVALID_JSON`: el cuerpo no es un JSON válido.
           content:
@@ -1698,6 +1700,10 @@ components:
           type: number
           minimum: 0
           description: Solo en un `OUTBOUND`. Costo unitario de esta salida; si es distinto, queda como el costo del producto.
+        unitPrice:
+          type: number
+          minimum: 0
+          description: Solo en un `OUTBOUND`. Precio de venta unitario de esta salida; si es distinto, queda como el precio del producto.
 
     Movement:
       type: object

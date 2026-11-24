@@ -65,6 +65,7 @@ export class MovementRepositoryMock implements MovementRepository {
     businessId,
     expectedStock,
     newCostPrice,
+    newSalePrice,
     ...data
   }: NewMovement): Promise<Movement | null> {
     this.beforeRecord?.();
@@ -77,6 +78,7 @@ export class MovementRepositoryMock implements MovementRepository {
 
     product.stock = data.resultingStock;
     if (newCostPrice !== undefined) product.costPrice = newCostPrice;
+    if (newSalePrice !== undefined) product.salePrice = newSalePrice;
     const movement: Movement = {
       id: `movement-${this.stored.length + 1}`,
       ...data,
