@@ -18,6 +18,8 @@ export interface NewMovement extends Omit<Movement, "id" | "createdAt"> {
   expectedStock: number;
   /** Si la salida trajo otro costo: queda como el nuevo costo del producto. */
   newCostPrice?: number;
+  /** Si la salida trajo otro precio: queda como el nuevo precio del producto. */
+  newSalePrice?: number;
 }
 
 export interface MovementRepository {

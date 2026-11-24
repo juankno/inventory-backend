@@ -29,6 +29,11 @@ export interface RegisterMovementInput {
    * del producto; si es distinto, queda como el nuevo costo del producto.
    */
   unitCost?: number;
+  /**
+   * Solo en las salidas: el precio de venta unitario de esta salida. Sin él se usa el
+   * precio del producto; si es distinto, queda como el nuevo precio del producto.
+   */
+  unitPrice?: number;
 }
 
 export interface RegisterMovementResult {
@@ -47,11 +52,10 @@ export class RegisterMovement {
     if (data.revertsMovementId !== undefined && data.type !== "ADJUSTMENT") {
       throw new AppError("VALIDATION_ERROR");
     }
-    if (data.unitCost !== undefined) {
+    for (const amount of [data.unitCost, data.unitPrice]) {
+      if (amount === undefined) continue;
       if (data.type !== "OUTBOUND") throw new AppError("VALIDATION_ERROR");
-      if (!hasAtMostTwoDecimals(data.unitCost)) {
-        throw new AppError("INVALID_QUANTITY");
-      }
+      if (!hasAtMostTwoDecimals(amount)) throw new AppError("INVALID_QUANTITY");
     }
 
     const replay = await this.findReplay(data);
@@ -88,6 +92,9 @@ export class RegisterMovement {
       const unitCost = outbound ? (data.unitCost ?? product.costPrice) : null;
       const costChanged =
         data.unitCost !== undefined && data.unitCost !== product.costPrice;
+      const unitPrice = outbound ? (data.unitPrice ?? product.salePrice) : null;
+      const priceChanged =
+        data.unitPrice !== undefined && data.unitPrice !== product.salePrice;
 
       try {
         const movement = await this.movementRepository.record({
@@ -99,11 +106,12 @@ export class RegisterMovement {
           quantity: change.quantity,
           resultingStock: change.resultingStock,
           idempotencyKey: data.idempotencyKey,
-          unitPrice: outbound ? product.salePrice : null,
+          unitPrice,
           unitCost,
           revertsMovementId: data.revertsMovementId ?? null,
           expectedStock: product.stock,
           ...(costChanged && { newCostPrice: data.unitCost }),
+          ...(priceChanged && { newSalePrice: data.unitPrice }),
         });
         if (movement) {
           return { created: true, movement, stock: movement.resultingStock };

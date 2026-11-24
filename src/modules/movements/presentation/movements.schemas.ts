@@ -10,4 +10,5 @@ export const registerMovementSchema = z.strictObject({
   idempotencyKey: z.uuid(),
   revertsMovementId: z.uuid().optional(),
   unitCost: z.number().min(0).max(MAX_DECIMAL_12_2).optional(),
+  unitPrice: z.number().min(0).max(MAX_DECIMAL_12_2).optional(),
 });

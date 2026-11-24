@@ -181,6 +181,27 @@ describe("PrismaMovementRepository", () => {
       expect(movement?.unitCost).toBe(1800);
     });
 
+    it("should update the sale price of the product when the sale brings a new one", async () => {
+      const { updateMany, create, repository } = setup();
+      updateMany.mockResolvedValue({ count: 1 });
+      create.mockResolvedValue({ ...movementRow, unitPrice: new Prisma.Decimal("2800.00") });
+
+      const movement = await repository.record({
+        ...newMovement,
+        unitPrice: 2800,
+        newSalePrice: 2800,
+      });
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: PRODUCT_ID, businessId: "business-1", isActive: true, stock: 10 },
+        data: { stock: 6, salePrice: 2800 },
+      });
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.not.objectContaining({ newSalePrice: expect.anything() }) }),
+      );
+      expect(movement?.unitPrice).toBe(2800);
+    });
+
     it("should create the movement without the businessId and expectedStock fields", async () => {
       const { updateMany, create, repository } = setup();
       updateMany.mockResolvedValue({ count: 1 });

@@ -92,6 +92,7 @@ export class PrismaMovementRepository implements MovementRepository {
     businessId,
     expectedStock,
     newCostPrice,
+    newSalePrice,
     ...data
   }: NewMovement): Promise<Movement | null> {
     try {
@@ -106,6 +107,7 @@ export class PrismaMovementRepository implements MovementRepository {
           data: {
             stock: data.resultingStock,
             ...(newCostPrice !== undefined && { costPrice: newCostPrice }),
+            ...(newSalePrice !== undefined && { salePrice: newSalePrice }),
           },
         });
         if (count === 0) return null;
